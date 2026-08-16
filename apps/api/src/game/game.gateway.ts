@@ -15,7 +15,8 @@ export interface Player {
   x: number;
   y: number;
 }
-@WebSocketGateway()
+
+@WebSocketGateway({ path: '/room' })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
@@ -24,7 +25,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly Max_Width = 800;
   private readonly Max_Height = 600;
 
-  // on connection
   handleConnection(client: Socket) {
     const PlayerName = Array.isArray(client.handshake.query.name)
       ? client.handshake.query.name[0]
@@ -45,7 +45,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  // on move
   @SubscribeMessage('movement')
   handleMovement(
     @ConnectedSocket() client: Socket,
@@ -64,7 +63,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  // on disconnection
   handleDisconnect(client: Socket) {
     this.players.delete(client.id);
     this.server.emit('playerLeft', client.id);

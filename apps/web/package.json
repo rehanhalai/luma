@@ -16,7 +16,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
-    "@repo/api": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",

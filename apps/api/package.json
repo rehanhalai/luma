@@ -20,7 +20,6 @@
     "@nestjs/platform-express": "^11.1.11",
     "@nestjs/platform-socket.io": "^11.2.1",
     "@nestjs/websockets": "^11.2.1",
-    "@repo/api": "workspace:*",
     "escape-html": "^1.0.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",

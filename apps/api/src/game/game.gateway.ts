@@ -10,7 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 
 export interface Player {
-  id: number;
+  id: string;
   name: string;
   x: number;
   y: number;
@@ -25,19 +25,24 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly Max_Height = 600;
 
   // on connection
-  handleConnection(client: Socket, data: { name: string }) {
-    console.log(`player ${client.id} connected to socket server`);
+  handleConnection(client: Socket) {
+    const PlayerName = Array.isArray(client.handshake.query.name)
+      ? client.handshake.query.name[0]
+      : client.handshake.query.name;
+    if (PlayerName) {
+      console.log(`player ${PlayerName} connected to socket server`);
 
-    const newPlayer: Player = {
-      id: Number(client.id),
-      name: data.name,
-      x: Math.floor(Math.random() * (this.Max_Width - 100)),
-      y: Math.floor(Math.random() * (this.Max_Height - 100)),
-    };
+      const newPlayer: Player = {
+        id: client.id,
+        name: PlayerName,
+        x: Math.floor(Math.random() * (this.Max_Width - 100)),
+        y: Math.floor(Math.random() * (this.Max_Height - 100)),
+      };
 
-    this.players.set(client.id, newPlayer);
-    client.emit('Players', Array.from(this.players.values()));
-    client.broadcast.emit('playerJoined', newPlayer);
+      this.players.set(client.id, newPlayer);
+      client.emit('currentPlayers', Array.from(this.players.values()));
+      client.broadcast.emit('playerJoined', newPlayer);
+    }
   }
 
   // on move

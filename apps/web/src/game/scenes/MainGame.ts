@@ -1,6 +1,6 @@
 import { Scene } from 'phaser';
 import { EventBus } from '../EventBus';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
 export interface Player {
   id: string;
@@ -19,9 +19,11 @@ export class MainGame extends Scene {
   };
 
   private players = new Map<string, Phaser.GameObjects.Rectangle>();
+  private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
+  private socket: Socket;
 
   create() {
-    const socket = io('http://localhost:3000', {
+    this.socket = io('http://localhost:3000', {
       path: '/room',
       query: {
         name: 'rehan',
@@ -29,17 +31,17 @@ export class MainGame extends Scene {
     });
     this.cameras.main.setBackgroundColor(0x90ee90);
 
-    socket.on('currentPlayers', (data: Player[]) => {
+    this.socket.on('currentPlayers', (data: Player[]) => {
       data.forEach((player) => {
         this.setupSocketListeners(player);
       });
     });
 
-    socket.on('playerJoined', (data: Player) => {
+    this.socket.on('playerJoined', (data: Player) => {
       this.setupSocketListeners(data);
     });
 
-    socket.on('playerLeft', (data: Player) => {
+    this.socket.on('playerLeft', (data: Player) => {
       const rect = this.players.get(data.id);
       if (rect) {
         rect.destroy();
@@ -47,14 +49,47 @@ export class MainGame extends Scene {
       }
     });
 
-    socket.on('movement', (data: Partial<Player>) => {
+    this.socket.on('playerMoved', (data: Partial<Player>) => {
       this.handlePlayerMovement(data.id, data.x, data.y);
     });
 
     this.events.on('shutdown', () => {
-      socket.disconnect();
+      this.socket.disconnect();
     });
+
     EventBus.emit('current-scene-ready', this);
+
+    if (this.input.keyboard) {
+      this.cursors = this.input.keyboard.createCursorKeys();
+    }
+  }
+
+  update() {
+    const myBox = this.players.get(this.socket.id);
+    if (!myBox || !this.cursors) return;
+
+    let moved = false;
+    const speed = 4;
+
+    if (this.cursors.left.isDown) {
+      myBox.x -= speed;
+      moved = true;
+    } else if (this.cursors.right.isDown) {
+      myBox.x += speed;
+      moved = true;
+    }
+
+    if (this.cursors.up.isDown) {
+      myBox.y -= speed;
+      moved = true;
+    } else if (this.cursors.down.isDown) {
+      myBox.y += speed;
+      moved = true;
+    }
+
+    if (moved) {
+      this.socket.emit('movement', { x: myBox.x, y: myBox.y });
+    }
   }
 
   private setupSocketListeners(player: Player) {
@@ -72,7 +107,8 @@ export class MainGame extends Scene {
   private handlePlayerMovement(id: string, newX: number, newY: number) {
     const player = this.players.get(id);
     if (player) {
-      player.setPosition(newX, newY);
+      player.x = newX;
+      player.y = newY;
     }
   }
 }

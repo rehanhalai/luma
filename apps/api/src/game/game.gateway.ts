@@ -16,7 +16,7 @@ export interface Player {
   y: number;
 }
 
-@WebSocketGateway({ path: '/room' })
+@WebSocketGateway({ path: '/room', cors: { origin: '*' } })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
@@ -30,8 +30,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       ? client.handshake.query.name[0]
       : client.handshake.query.name;
     if (PlayerName) {
-      console.log(`player ${PlayerName} connected to socket server`);
-
       const newPlayer: Player = {
         id: client.id,
         name: PlayerName,
@@ -64,7 +62,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
+    this.server.emit('playerLeft', this.players.get(client.id));
     this.players.delete(client.id);
-    this.server.emit('playerLeft', client.id);
   }
 }

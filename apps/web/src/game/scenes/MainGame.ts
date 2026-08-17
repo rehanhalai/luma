@@ -25,8 +25,8 @@ export class MainGame extends Scene {
 
   preload() {
     this.load.spritesheet('character', '/assets/sprite/character.svg', {
-      frameHeight: 95,
-      frameWidth: 70,
+      frameWidth: 64,
+      frameHeight: 96,
     });
   }
   create() {
@@ -66,10 +66,37 @@ export class MainGame extends Scene {
     EventBus.emit('current-scene-ready', this);
 
     this.anims.create({
-      key: 'walk-up',
+      key: 'walk-down',
       frames: this.anims.generateFrameNumbers('character', {
         start: 0,
         end: 3,
+      }),
+      frameRate: 10,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: 'walk-up',
+      frames: this.anims.generateFrameNumbers('character', {
+        start: 4,
+        end: 7,
+      }),
+      frameRate: 10,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: 'walk-left',
+      frames: this.anims.generateFrameNumbers('character', {
+        start: 8,
+        end: 11,
+      }),
+      frameRate: 10,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: 'walk-right',
+      frames: this.anims.generateFrameNumbers('character', {
+        start: 12,
+        end: 15,
       }),
       frameRate: 10,
       repeat: -1,
@@ -81,30 +108,34 @@ export class MainGame extends Scene {
   }
 
   update() {
-    const myBox = this.players.get(this.socket.id);
-    if (!myBox || !this.cursors) return;
+    const mySprite = this.players.get(this.socket.id);
+    if (!mySprite || !this.cursors) return;
 
     let moved = false;
     const speed = 4;
 
     if (this.cursors.left.isDown) {
-      myBox.x -= speed;
+      mySprite.x -= speed;
+      mySprite.anims.play('walk-left', true);
       moved = true;
     } else if (this.cursors.right.isDown) {
-      myBox.x += speed;
+      mySprite.x += speed;
+      mySprite.anims.play('walk-right', true);
       moved = true;
-    }
-
-    if (this.cursors.up.isDown) {
-      myBox.y -= speed;
+    } else if (this.cursors.up.isDown) {
+      mySprite.y -= speed;
+      mySprite.anims.play('walk-up', true);
       moved = true;
     } else if (this.cursors.down.isDown) {
-      myBox.y += speed;
+      mySprite.y += speed;
+      mySprite.anims.play('walk-down', true);
       moved = true;
+    } else {
+      mySprite.anims.stop();
     }
 
     if (moved) {
-      this.socket.emit('movement', { x: myBox.x, y: myBox.y });
+      this.socket.emit('movement', { x: mySprite.x, y: mySprite.y });
     }
   }
 

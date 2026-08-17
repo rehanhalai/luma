@@ -1,4 +1,4 @@
-import { Scene } from 'phaser';
+import { GameObjects, Scene } from 'phaser';
 import { EventBus } from '../EventBus';
 import { io, Socket } from 'socket.io-client';
 
@@ -18,10 +18,17 @@ export class MainGame extends Scene {
     return Math.floor(Math.random() * 16777215);
   };
 
-  private players = new Map<string, Phaser.GameObjects.Rectangle>();
+  private players = new Map<string, Phaser.GameObjects.Sprite>();
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private socket: Socket;
+  private character: GameObjects.Sprite;
 
+  preload() {
+    this.load.spritesheet('character', '/assets/sprite/character.svg', {
+      frameHeight: 95,
+      frameWidth: 70,
+    });
+  }
   create() {
     this.socket = io('http://localhost:3000', {
       path: '/room',
@@ -30,7 +37,6 @@ export class MainGame extends Scene {
       },
     });
     this.cameras.main.setBackgroundColor(0x90ee90);
-
     this.socket.on('currentPlayers', (data: Player[]) => {
       data.forEach((player) => {
         this.setupSocketListeners(player);
@@ -58,6 +64,16 @@ export class MainGame extends Scene {
     });
 
     EventBus.emit('current-scene-ready', this);
+
+    this.anims.create({
+      key: 'walk-up',
+      frames: this.anims.generateFrameNumbers('character', {
+        start: 0,
+        end: 3,
+      }),
+      frameRate: 10,
+      repeat: -1,
+    });
 
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();
@@ -94,14 +110,8 @@ export class MainGame extends Scene {
 
   private setupSocketListeners(player: Player) {
     if (this.players.has(player.id)) return;
-    const rect = this.add.rectangle(
-      player.x,
-      player.y,
-      32,
-      32,
-      this.getRandomHexColor(),
-    );
-    this.players.set(player.id, rect);
+    const sprite = this.add.sprite(player.x, player.y, 'character');
+    this.players.set(player.id, sprite);
   }
 
   private handlePlayerMovement(id: string, newX: number, newY: number) {

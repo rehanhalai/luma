@@ -46,7 +46,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('movement')
   handleMovement(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { x: number; y: number },
+    @MessageBody() data: { x: number; y: number; direction: string },
   ) {
     const player = this.players.get(client.id);
     if (player) {
@@ -57,6 +57,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         id: client.id,
         x: player.x,
         y: player.y,
+        direction: data.direction,
       });
     }
   }

@@ -21,7 +21,6 @@ export class MainGame extends Scene {
   private players = new Map<string, Phaser.GameObjects.Sprite>();
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private socket: Socket;
-  private character: GameObjects.Sprite;
 
   preload() {
     this.load.spritesheet('character', '/assets/sprite/character.svg', {
@@ -55,9 +54,12 @@ export class MainGame extends Scene {
       }
     });
 
-    this.socket.on('playerMoved', (data: Partial<Player>) => {
-      this.handlePlayerMovement(data.id, data.x, data.y);
-    });
+    this.socket.on(
+      'playerMoved',
+      (data: { id: string; x: number; y: number; direction: string }) => {
+        this.handlePlayerMovement(data.id, data.x, data.y, data.direction);
+      },
+    );
 
     this.events.on('shutdown', () => {
       this.socket.disconnect();
@@ -72,7 +74,6 @@ export class MainGame extends Scene {
         end: 3,
       }),
       frameRate: 10,
-      repeat: -1,
     });
     this.anims.create({
       key: 'walk-up',
@@ -81,7 +82,6 @@ export class MainGame extends Scene {
         end: 7,
       }),
       frameRate: 10,
-      repeat: -1,
     });
     this.anims.create({
       key: 'walk-left',
@@ -90,7 +90,6 @@ export class MainGame extends Scene {
         end: 11,
       }),
       frameRate: 10,
-      repeat: -1,
     });
     this.anims.create({
       key: 'walk-right',
@@ -99,7 +98,6 @@ export class MainGame extends Scene {
         end: 15,
       }),
       frameRate: 10,
-      repeat: -1,
     });
 
     if (this.input.keyboard) {
@@ -112,44 +110,60 @@ export class MainGame extends Scene {
     if (!mySprite || !this.cursors) return;
 
     let moved = false;
+    let direction: string = '';
     const speed = 4;
 
     if (this.cursors.left.isDown) {
       mySprite.x -= speed;
       mySprite.anims.play('walk-left', true);
       moved = true;
+      direction = 'left';
     } else if (this.cursors.right.isDown) {
       mySprite.x += speed;
       mySprite.anims.play('walk-right', true);
       moved = true;
+      direction = 'right';
     } else if (this.cursors.up.isDown) {
       mySprite.y -= speed;
       mySprite.anims.play('walk-up', true);
       moved = true;
+      direction = 'up';
     } else if (this.cursors.down.isDown) {
       mySprite.y += speed;
       mySprite.anims.play('walk-down', true);
       moved = true;
+      direction = 'down';
     } else {
       mySprite.anims.stop();
     }
 
     if (moved) {
-      this.socket.emit('movement', { x: mySprite.x, y: mySprite.y });
+      this.socket.emit('movement', {
+        x: mySprite.x,
+        y: mySprite.y,
+        direction: direction,
+      });
     }
   }
 
   private setupSocketListeners(player: Player) {
     if (this.players.has(player.id)) return;
     const sprite = this.add.sprite(player.x, player.y, 'character');
+    sprite.setScale(1);
     this.players.set(player.id, sprite);
   }
 
-  private handlePlayerMovement(id: string, newX: number, newY: number) {
+  private handlePlayerMovement(
+    id: string,
+    newX: number,
+    newY: number,
+    direction: string,
+  ) {
     const player = this.players.get(id);
     if (player) {
       player.x = newX;
       player.y = newY;
+      player.anims.play(`walk-${direction}`, true);
     }
   }
 }

@@ -2,9 +2,14 @@ import type { MainGame, Player } from '../scenes/MainGame';
 
 export function setupSocketListeners(scene: MainGame, player: Player) {
   if (scene.players.has(player.id)) return;
-  const sprite = scene.add.sprite(player.x, player.y, 'character');
-  sprite.setScale(1);
+  const sprite = scene.physics.add.sprite(player.x, player.y, 'character');
   scene.players.set(player.id, sprite);
+  scene.mapLayers.forEach((layer) => {
+    scene.physics.add.collider(sprite, layer);
+  });
+  if (player.id === scene.networkManager.socket.id) {
+    scene.cameras.main.startFollow(sprite);
+  }
 }
 
 export function handlePlayerMovement(

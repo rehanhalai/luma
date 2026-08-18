@@ -22,8 +22,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server!: Server;
 
   private players = new Map<string, Player>();
-  private readonly Max_Width = 800;
-  private readonly Max_Height = 600;
+  private readonly Max_Width = 3840;
+  private readonly Max_Height = 2880;
 
   handleConnection(client: Socket) {
     const PlayerName = Array.isArray(client.handshake.query.name)

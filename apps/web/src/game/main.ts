@@ -4,6 +4,13 @@ import Phaser from 'phaser';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: AUTO,
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { x: 0, y: 0 },
+      debug: true,
+    },
+  },
   scale: {
     mode: Phaser.Scale.ScaleModes.NONE,
     width: window.innerWidth,
@@ -14,8 +21,6 @@ const config: Phaser.Types.Core.GameConfig = {
     antialiasGL: false,
     pixelArt: true,
   },
-  canvasStyle: `display: block; width: 100%; height: 100%;`,
-  backgroundColor: '#028c78',
   scene: [MainGame],
 };
 

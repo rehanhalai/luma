@@ -33,7 +33,7 @@ export const PhaserGame = forwardRef<IRefPhaserGame>(
     return (
       <div
         id="game-container"
-        className="w-200 h-150 rounded-lg overflow-hidden shadow-xl"
+        className="w-vw h-vh"
       />
     );
   },

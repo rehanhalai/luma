@@ -6,25 +6,26 @@ export function movementInputManager(scene: MainGame) {
 
   let moved = false;
   let direction: string = '';
-  const speed = 4;
+  const speed = 200;
+  mySprite.setVelocity(0);
 
-  if (scene.cursors.left.isDown) {
-    mySprite.x -= speed;
+  if (scene.cursors.left.isDown || scene.keys.a.isDown) {
+    mySprite.setVelocityX(-speed);
     mySprite.anims.play('walk-left', true);
     moved = true;
     direction = 'left';
-  } else if (scene.cursors.right.isDown) {
-    mySprite.x += speed;
+  } else if (scene.cursors.right.isDown || scene.keys.d.isDown) {
+    mySprite.setVelocityX(speed);
     mySprite.anims.play('walk-right', true);
     moved = true;
     direction = 'right';
-  } else if (scene.cursors.up.isDown) {
-    mySprite.y -= speed;
+  } else if (scene.cursors.up.isDown || scene.keys.w.isDown) {
+    mySprite.setVelocityY(-speed);
     mySprite.anims.play('walk-up', true);
     moved = true;
     direction = 'up';
-  } else if (scene.cursors.down.isDown) {
-    mySprite.y += speed;
+  } else if (scene.cursors.down.isDown || scene.keys.s.isDown) {
+    mySprite.setVelocityY(speed);
     mySprite.anims.play('walk-down', true);
     moved = true;
     direction = 'down';

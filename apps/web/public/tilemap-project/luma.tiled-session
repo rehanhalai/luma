@@ -1,0 +1,55 @@
+{
+    "activeFile": "town.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 2
+        },
+        "tilemap.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1.5
+        },
+        "tiny-town.tsx": {
+            "scaleInDock": 2,
+            "scaleInEditor": 1
+        },
+        "town.tmx": {
+            "expandedGroupLayers": [
+                12
+            ],
+            "scale": 4,
+            "selectedLayer": 6,
+            "viewCenter": {
+                "x": 522.625,
+                "y": 617
+            }
+        },
+        "town.tmx#tilemap_packed": {
+            "scaleInDock": 1,
+            "scaleInEditor": 4
+        }
+    },
+    "last.exportedFilePath": "/home/rehanhalai/code/luma/apps/web/public/assets/maps",
+    "last.imagePath": "/home/rehanhalai/Downloads/kenney_tiny-town/Tilemap",
+    "map.lastUsedExportFilter": "All Files (*)",
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "openFiles": [
+        "town.tmx"
+    ],
+    "project": "luma.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "town.tmx",
+        "tiny-town.tsx",
+        "tilemap.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    }
+}

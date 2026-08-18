@@ -1,17 +1,30 @@
-import { AUTO,Game } from "phaser";
-import { MainGame } from "./scenes/MainGame";
+import { AUTO, Game } from 'phaser';
+import { MainGame } from './scenes/MainGame';
+import Phaser from 'phaser';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: AUTO,
-  width: 800,
-  height: 600,
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { x: 0, y: 0 },
+      debug: true,
+    },
+  },
+  scale: {
+    mode: Phaser.Scale.ScaleModes.NONE,
+    width: window.innerWidth,
+    height: window.innerHeight,
+  },
   parent: 'game-container',
-  backgroundColor: '#028c78',
+  render: {
+    antialiasGL: false,
+    pixelArt: true,
+  },
   scene: [MainGame],
 };
 
-
-const StartGame = (parent :string) => {
-    return new Game({...config,parent})
-}
+const StartGame = (parent: string) => {
+  return new Game({ ...config, parent });
+};
 export default StartGame;

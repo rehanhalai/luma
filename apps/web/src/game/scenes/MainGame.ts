@@ -1,6 +1,8 @@
 import { Scene } from 'phaser';
 import { EventBus } from '../EventBus';
-import { io, Socket } from 'socket.io-client';
+import { initAnimations } from '../utils/animations';
+import { NetworkManager } from '../networks/NetworkManager';
+import { movementInputManager } from '../utils/input';
 
 export interface Player {
   id: string;
@@ -14,101 +16,53 @@ export class MainGame extends Scene {
     super('MainGame');
   }
 
-  private getRandomHexColor = (): number => {
-    return Math.floor(Math.random() * 16777215);
-  };
+  public players = new Map<string, Phaser.Physics.Arcade.Sprite>();
+  public networkManager: NetworkManager;
+  public cursors: Phaser.Types.Input.Keyboard.CursorKeys;
+  public keys: Record<string, Phaser.Input.Keyboard.Key>;
+  public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
 
-  private players = new Map<string, Phaser.GameObjects.Rectangle>();
-  private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-  private socket: Socket;
-
+  preload() {
+    this.load.baseURL = '/assets';
+    this.load.spritesheet('character', '/sprite/character.svg', {
+      frameWidth: 64,
+      frameHeight: 96,
+    });
+    this.load.image('tiles', '/maps/tilemap_packed.png');
+    this.load.tilemapTiledJSON('map', '/maps/town.json');
+  }
   create() {
-    this.socket = io('http://localhost:3000', {
-      path: '/room',
-      query: {
-        name: 'rehan',
-      },
-    });
     this.cameras.main.setBackgroundColor(0x90ee90);
+    initAnimations(this);
+    const map = this.make.tilemap({
+      key: 'map',
+      tileWidth: 16,
+      tileHeight: 16,
+    });
 
-    this.socket.on('currentPlayers', (data: Player[]) => {
-      data.forEach((player) => {
-        this.setupSocketListeners(player);
+    const tileset = map.addTilesetImage('tilemap_packed', 'tiles');
+    if (tileset) {
+      map.layers.forEach((layer) => {
+        const l = map.createLayer(layer.name, tileset, 0, 0);
+        l?.setScale(3);
+        l?.setCollisionByProperty({ collide: true });
+        this.mapLayers.push(l as Phaser.Tilemaps.TilemapLayer);
       });
-    });
-
-    this.socket.on('playerJoined', (data: Player) => {
-      this.setupSocketListeners(data);
-    });
-
-    this.socket.on('playerLeft', (data: Player) => {
-      const rect = this.players.get(data.id);
-      if (rect) {
-        rect.destroy();
-        this.players.delete(data.id);
-      }
-    });
-
-    this.socket.on('playerMoved', (data: Partial<Player>) => {
-      this.handlePlayerMovement(data.id, data.x, data.y);
-    });
-
-    this.events.on('shutdown', () => {
-      this.socket.disconnect();
-    });
-
-    EventBus.emit('current-scene-ready', this);
+    }
+    this.networkManager = new NetworkManager(this);
 
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();
+      this.keys = this.input.keyboard.addKeys('w,s,a,d') as Record<
+        string,
+        Phaser.Input.Keyboard.Key
+      >;
     }
+
+    EventBus.emit('current-scene-ready', this);
   }
 
   update() {
-    const myBox = this.players.get(this.socket.id);
-    if (!myBox || !this.cursors) return;
-
-    let moved = false;
-    const speed = 4;
-
-    if (this.cursors.left.isDown) {
-      myBox.x -= speed;
-      moved = true;
-    } else if (this.cursors.right.isDown) {
-      myBox.x += speed;
-      moved = true;
-    }
-
-    if (this.cursors.up.isDown) {
-      myBox.y -= speed;
-      moved = true;
-    } else if (this.cursors.down.isDown) {
-      myBox.y += speed;
-      moved = true;
-    }
-
-    if (moved) {
-      this.socket.emit('movement', { x: myBox.x, y: myBox.y });
-    }
-  }
-
-  private setupSocketListeners(player: Player) {
-    if (this.players.has(player.id)) return;
-    const rect = this.add.rectangle(
-      player.x,
-      player.y,
-      32,
-      32,
-      this.getRandomHexColor(),
-    );
-    this.players.set(player.id, rect);
-  }
-
-  private handlePlayerMovement(id: string, newX: number, newY: number) {
-    const player = this.players.get(id);
-    if (player) {
-      player.x = newX;
-      player.y = newY;
-    }
+    movementInputManager(this);
   }
 }

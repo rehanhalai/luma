@@ -22,8 +22,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server!: Server;
 
   private players = new Map<string, Player>();
-  private readonly Max_Width = 800;
-  private readonly Max_Height = 600;
+  private readonly Max_Width = 3840;
+  private readonly Max_Height = 2880;
 
   handleConnection(client: Socket) {
     const PlayerName = Array.isArray(client.handshake.query.name)
@@ -46,7 +46,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('movement')
   handleMovement(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { x: number; y: number },
+    @MessageBody() data: { x: number; y: number; direction: string },
   ) {
     const player = this.players.get(client.id);
     if (player) {
@@ -57,6 +57,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         id: client.id,
         x: player.x,
         y: player.y,
+        direction: data.direction,
       });
     }
   }

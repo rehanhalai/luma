@@ -23,13 +23,16 @@ export class MainGame extends Scene {
   public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
 
   preload() {
-    this.load.baseURL = '/assets';
-    this.load.spritesheet('character', '/sprite/character.svg', {
-      frameWidth: 64,
-      frameHeight: 96,
-    });
-    this.load.image('tiles', '/maps/tilemap_packed.png');
-    this.load.tilemapTiledJSON('map', '/maps/town.json');
+    this.load.spritesheet(
+      'character',
+      'https://assets.rehanhalai.me/luma/sprites/Other/pipo-charachip_otaku01.webp',
+      {
+        frameWidth: 32,
+        frameHeight: 32,
+      },
+    );
+    this.load.image('tiles', '/assets/maps/tilemap_packed.png');
+    this.load.tilemapTiledJSON('map', '/assets/maps/town.json');
   }
   create() {
     this.cameras.main.setBackgroundColor(0x90ee90);

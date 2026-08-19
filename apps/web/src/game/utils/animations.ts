@@ -3,6 +3,7 @@ import type { MainGame, Player } from '../scenes/MainGame';
 export function setupSocketListeners(scene: MainGame, player: Player) {
   if (scene.players.has(player.id)) return;
   const sprite = scene.physics.add.sprite(player.x, player.y, 'character');
+  sprite.setScale(2);
   scene.players.set(player.id, sprite);
   scene.mapLayers.forEach((layer) => {
     scene.physics.add.collider(sprite, layer);
@@ -32,31 +33,31 @@ export function initAnimations(scene: MainGame) {
     key: 'walk-down',
     frames: scene.anims.generateFrameNumbers('character', {
       start: 0,
-      end: 3,
-    }),
-    frameRate: 10,
-  });
-  scene.anims.create({
-    key: 'walk-up',
-    frames: scene.anims.generateFrameNumbers('character', {
-      start: 4,
-      end: 7,
+      end: 2,
     }),
     frameRate: 10,
   });
   scene.anims.create({
     key: 'walk-left',
     frames: scene.anims.generateFrameNumbers('character', {
-      start: 8,
-      end: 11,
+      start: 3,
+      end: 5,
     }),
     frameRate: 10,
   });
   scene.anims.create({
     key: 'walk-right',
     frames: scene.anims.generateFrameNumbers('character', {
-      start: 12,
-      end: 15,
+      start: 6,
+      end: 8,
+    }),
+    frameRate: 10,
+  });
+  scene.anims.create({
+    key: 'walk-up',
+    frames: scene.anims.generateFrameNumbers('character', {
+      start: 9,
+      end: 11,
     }),
     frameRate: 10,
   });

@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { Player, player, NewPlayer } from 'db/schema';
+import { Player, player } from 'db/schema';
 
 @Injectable()
 export class AppService {

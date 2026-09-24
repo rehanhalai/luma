@@ -17,9 +17,9 @@ export class MainGame extends Scene {
   }
 
   public players = new Map<string, Phaser.Physics.Arcade.Sprite>();
-  public networkManager: NetworkManager;
-  public cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-  public keys: Record<string, Phaser.Input.Keyboard.Key>;
+  public networkManager!: NetworkManager;
+  public cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  public keys!: Record<string, Phaser.Input.Keyboard.Key>;
   public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
 
   preload() {

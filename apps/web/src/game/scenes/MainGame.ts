@@ -23,14 +23,10 @@ export class MainGame extends Scene {
   public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
 
   preload() {
-    this.load.spritesheet(
-      'character',
-      'https://assets.rehanhalai.me/luma/sprites/Other/pipo-charachip_otaku01.webp',
-      {
-        frameWidth: 32,
-        frameHeight: 32,
-      },
-    );
+    this.load.spritesheet('character', '/assets/sprite/Female.png', {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
     this.load.image('tiles', '/assets/maps/tilemap_packed.png');
     this.load.tilemapTiledJSON('map', '/assets/maps/town.json');
   }

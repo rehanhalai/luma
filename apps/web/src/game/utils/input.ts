@@ -1,7 +1,7 @@
 import type { MainGame } from '../scenes/MainGame';
 
 export function movementInputManager(scene: MainGame) {
-  const mySprite = scene.players.get(scene.networkManager.socket.id);
+  const mySprite = scene.players.get(scene.networkManager.socket.id!);
   if (!mySprite || !scene.cursors) return;
 
   let moved = false;

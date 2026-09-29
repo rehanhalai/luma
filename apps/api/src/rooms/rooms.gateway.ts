@@ -90,9 +90,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.join(code);
     client.data.roomCode = code;
 
-    client
-      .to(code)
-      .emit('currentPlayers', Array.from(roomState.players.values()));
+    client.emit('currentPlayers', Array.from(roomState.players.values()));
     client.to(code).emit('playerJoined', roomState.players.get(client.id));
   }
 

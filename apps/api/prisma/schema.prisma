@@ -41,6 +41,7 @@ model Avatar {
   name  String
   path  String
   key   String @unique
+  category String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

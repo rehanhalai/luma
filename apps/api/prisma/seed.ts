@@ -11,6 +11,11 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  console.log('clearing the db before seed');
+  await prisma.room.deleteMany({});
+  await prisma.map.deleteMany({});
+  await prisma.avatar.deleteMany({});
+
   console.log('🌱 Starting Seed...');
 
   // 1. Seed or Upsert Default Map
@@ -104,7 +109,9 @@ async function main() {
     }
   }
 
-  console.log(`🎭 Found ${avatarData.length} avatars across categories. Seeding to database...`);
+  console.log(
+    `🎭 Found ${avatarData.length} avatars across categories. Seeding to database...`,
+  );
 
   const result = await prisma.avatar.createMany({
     data: avatarData,

@@ -5,9 +5,14 @@ import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { GameGateway } from './game/game.gateway';
 import { PrismaModule } from './prisma/prisma.module';
+import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    RoomsModule,
+  ],
   controllers: [AppController],
   providers: [AppService, GameGateway],
 })

@@ -10,7 +10,11 @@ export class RoomsService {
     return rooms;
   }
 
-  findOne(code: string) {
-    return `This action returns room with code #${code}`;
+  async findOne(code: string) {
+    const room = await this.prisma.room.findUnique({
+      where: { code },
+      include: { map: true },
+    });
+    return room;
   }
 }

@@ -8,7 +8,34 @@ datasource db {
   provider = "postgresql"
 }
 
-model player {
-  id   Int    @id @default(autoincrement())
-  name String
+model Map {
+  id        Int      @id @default(autoincrement())
+  name      String   // e.g. "Town Square"
+  path      String   // e.g. "/assets/maps/town.json" (for Phaser)
+  createdAt DateTime @default(now())
+  // A map can be used by multiple rooms
+  rooms     Room[]
+}
+
+model Room {
+  id          Int      @id @default(autoincrement())
+  name        String   // e.g. "Community Hangout"
+  code        String   @unique // e.g. "town-1" or "lobby" (used in URL: ?room=lobby)
+  description String? 
+  maxCapacity Int      @default(50)
+  
+  // Relation to Map
+  mapId       Int
+  map         Map      @relation(fields: [mapId], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Avatar {
+  id    Int    @id @default(autoincrement())
+  name  String
+  path  String
+  key   String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -30,11 +30,6 @@ export const PhaserGame = forwardRef<IRefPhaserGame>(
       };
     }, [ref]);
 
-    return (
-      <div
-        id="game-container"
-        className="w-vw h-vh"
-      />
-    );
+    return <div id="game-container" className="w-vw h-vh" />;
   },
 );

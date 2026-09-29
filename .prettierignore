@@ -1,0 +1,10 @@
+# Dependencies and build outputs
+node_modules
+dist
+.turbo
+
+# Static game assets (XML tilesets, images, maps)
+**/public/**
+
+# Auto-generated Prisma client
+**/src/generated/**

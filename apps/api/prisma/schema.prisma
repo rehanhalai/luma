@@ -9,12 +9,17 @@ datasource db {
 }
 
 model Map {
-  id        Int      @id @default(autoincrement())
-  name      String   // e.g. "Town Square"
-  path      String   // e.g. "/assets/maps/town.json" (for Phaser)
-  createdAt DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  name          String   // e.g. "Town Square"
+  jsonPath      String   // e.g. "/assets/maps/town.json" (for Phaser)
+  tilesetPath   String
+
+  spawnX        Int   @default(100)
+  spawnY        Int   @default(100)
+
   // A map can be used by multiple rooms
   rooms     Room[]
+  createdAt     DateTime @default(now())
 }
 
 model Room {

@@ -11,14 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-
-interface Room {
-  id: string;
-  name: string;
-  code: string;
-  description: string;
-  maxCapacity: number;
-}
+import { getRooms, type Room } from './lobby.api';
 
 export function LobbyPage() {
   const navigate = useNavigate();
@@ -29,25 +22,27 @@ export function LobbyPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchRooms() {
       try {
         setIsLoading(true);
-        const res = await fetch('http://localhost:3000/rooms');
-        if (!res.ok) throw new Error('Failed to fetch rooms');
-        const data = await res.json();
-        setRooms(data);
+        const data = await getRooms();
+        if (isMounted) setRooms(data);
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('An unexpected error occurred');
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'An unexpected error occurred');
         }
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     }
 
     void fetchRooms();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleJoin = (roomCode: string) => {

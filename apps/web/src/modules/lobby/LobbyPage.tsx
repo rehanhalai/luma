@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { getRooms, type Room } from './lobby.api';
+import { getRooms} from './lobby.api';
+import type { Room } from '@repo/database/types';
 
 export function LobbyPage() {
   const navigate = useNavigate();

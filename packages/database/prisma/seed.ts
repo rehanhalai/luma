@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaClient } from '../src/generated/client.js';
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
@@ -72,7 +72,10 @@ async function main() {
   }
 
   // 3. Scan sprites directory and categorize avatars
-  const spritesDir = path.resolve(__dirname, '../../web/public/assets/sprites');
+  const spritesDir = path.resolve(
+    __dirname,
+    '../../../apps/web/public/assets/sprites',
+  );
   const avatarData: Array<{
     name: string;
     key: string;

@@ -32,6 +32,7 @@ playwright-report/
 out/
 build
 dist
+packages/database/src/generated/
 
 # IDEs and editors
 /.idea

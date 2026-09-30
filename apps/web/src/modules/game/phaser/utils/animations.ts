@@ -1,4 +1,5 @@
-import type { MainGame, Player } from '../scenes/MainGame';
+import type { MainGame } from '../scenes/MainGame';
+import type { Player } from '@repo/types';
 
 export function setupSocketListeners(scene: MainGame, player: Player) {
   if (scene.players.has(player.id)) return;

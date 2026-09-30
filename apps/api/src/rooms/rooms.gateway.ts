@@ -9,20 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
-
-export interface Player {
-  id: string;
-  name: string;
-  avatar: string;
-  x: number;
-  y: number;
-}
-
-interface RoomStat {
-  width: number;
-  height: number;
-  players: Map<string, Player>;
-}
+import type { Player, RoomStat } from '@repo/types';
 
 @WebSocketGateway()
 export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {

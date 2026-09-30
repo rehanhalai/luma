@@ -1,4 +1,4 @@
-import StartGame from "@/game/main";
+import StartGame from "@/modules/game/phaser/config";
 import { useRef, useLayoutEffect, forwardRef } from "react";
 
 export interface IRefPhaserGame {

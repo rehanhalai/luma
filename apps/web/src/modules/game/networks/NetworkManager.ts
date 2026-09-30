@@ -1,10 +1,10 @@
 import { io, Socket } from 'socket.io-client';
-import type { Player } from '../scenes/MainGame';
-import { MainGame } from '../scenes/MainGame';
+import type { Player } from '@repo/types';
+import { MainGame } from '../phaser/scenes/MainGame';
 import {
   handlePlayerMovement,
   setupSocketListeners,
-} from '../utils/animations';
+} from '../phaser/utils/animations';
 
 export class NetworkManager {
   private scene: MainGame;

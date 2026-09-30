@@ -1,15 +1,8 @@
 import { Scene } from 'phaser';
 import { EventBus } from '../EventBus';
 import { initAnimations } from '../utils/animations';
-import { NetworkManager } from '../networks/NetworkManager';
+import { NetworkManager } from '../../networks/NetworkManager';
 import { movementInputManager } from '../utils/input';
-
-export interface Player {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-}
 
 export class MainGame extends Scene {
   constructor() {
@@ -21,6 +14,8 @@ export class MainGame extends Scene {
   public cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   public keys!: Record<string, Phaser.Input.Keyboard.Key>;
   public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
+
+  init() {}
 
   preload() {
     this.load.spritesheet('character', '/assets/sprite/Female.png', {

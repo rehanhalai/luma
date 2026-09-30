@@ -1,4 +1,4 @@
-import type { Room } from '@repo/database/types';
+import type { Room } from '@repo/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 

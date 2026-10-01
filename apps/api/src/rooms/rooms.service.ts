@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import type { Room, Map } from '@repo/types';
 
 @Injectable()
 export class RoomsService {
@@ -10,7 +11,7 @@ export class RoomsService {
     return rooms;
   }
 
-  async findOne(code: string) {
+  async findOne(code: string): Promise<(Room & { map: Map }) | null> {
     const room = await this.prisma.room.findUnique({
       where: { code },
       include: { map: true },

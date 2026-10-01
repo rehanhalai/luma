@@ -15,7 +15,7 @@
     "build": "tsc",
     "db:generate": "prisma generate && tsc",
     "db:push": "prisma db push",
-    "db:seed": "ts-node prisma/seed.ts",
+    "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {
@@ -27,11 +27,12 @@
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.19.3",
     "@types/pg": "^8.23.1",
+    "dotenv": "^18.0.5",
     "prisma": "^7.10.0",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.5.4"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts"
   }
 }

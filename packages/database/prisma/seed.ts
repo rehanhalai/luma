@@ -1,9 +1,13 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/client.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
@@ -18,22 +22,44 @@ async function main() {
 
   console.log('🌱 Starting Seed...');
 
-  // 1. Seed or Upsert Default Map
+  // 1. Read Tiled Map JSON from packages/database/data/town.json
+  const townJsonPath = path.resolve(__dirname, '../data/town.json');
+  let townJson: any = null;
+  if (fs.existsSync(townJsonPath)) {
+    townJson = JSON.parse(fs.readFileSync(townJsonPath, 'utf-8'));
+    console.log('  ✓ Loaded town.json from packages/database/data/town.json');
+  } else {
+    console.warn(`  ⚠️ Could not find map file at ${townJsonPath}`);
+  }
+
+  const mapScale = 3;
+  const mapWidth = townJson
+    ? (townJson.width || 80) * (townJson.tilewidth || 16) * mapScale
+    : 3840;
+  const mapHeight = townJson
+    ? (townJson.height || 60) * (townJson.tileheight || 16) * mapScale
+    : 2880;
+
+  // 2. Seed or Upsert Default Map with mapData
   const map = await prisma.map.upsert({
     where: { id: 1 },
     update: {
       name: 'Town Square',
-      jsonPath: '/assets/maps/town.json',
       tilesetPath: '/assets/maps/tilemap_packed.png',
+      width: mapWidth,
+      height: mapHeight,
       spawnX: 100,
       spawnY: 100,
+      mapData: townJson,
     },
     create: {
       name: 'Town Square',
-      jsonPath: '/assets/maps/town.json',
       tilesetPath: '/assets/maps/tilemap_packed.png',
-      spawnX: 100,
-      spawnY: 100,
+      width: mapWidth,
+      height: mapHeight,
+      spawnX: 1500,
+      spawnY: 1300,
+      mapData: townJson,
     },
   });
 

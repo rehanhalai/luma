@@ -23,7 +23,23 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [MainGame],
 };
 
-const StartGame = (parent: string) => {
-  return new Game({ ...config, parent });
+export interface RoomParams {
+  roomCode: string;
+  name: string;
+  avatar: string;
+}
+
+const StartGame = (parent: HTMLElement, roomParams?: RoomParams) => {
+  return new Game({
+    ...config,
+    parent,
+    callbacks: {
+      preBoot: (game) => {
+        if (roomParams) {
+          game.registry.set('roomParams', roomParams);
+        }
+      },
+    },
+  });
 };
 export default StartGame;

@@ -94,7 +94,7 @@ export function useLobby() {
   const handleJoinRoom = (roomCode: string) => {
     const finalName = name.trim() || 'Guest';
     navigate(
-      `/room/${roomCode}?name=${encodeURIComponent(finalName)}&avatar=${encodeURIComponent(avatar)}`,
+      `/room?code=${encodeURIComponent(roomCode)}&name=${encodeURIComponent(finalName)}&avatar=${encodeURIComponent(avatar)}`,
     );
   };
 

@@ -14,7 +14,7 @@ export class RoomScene extends Scene {
   public players = new Map<string, Phaser.Physics.Arcade.Sprite>();
   public networkManager!: NetworkManager;
   public cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  public keys!: Record<string, Phaser.Input.Keyboard.Key>;
+  public keys!: Record<'w' | 's' | 'a' | 'd', Phaser.Input.Keyboard.Key>;
   public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
 
   init() {
@@ -24,7 +24,7 @@ export class RoomScene extends Scene {
   preload() {
     const avatarPath = this.roomParams?.avatar;
 
-    this.load.spritesheet('character', avatarPath, {
+    this.load.spritesheet(avatarPath, avatarPath, {
       frameWidth: 32,
       frameHeight: 32,
     });

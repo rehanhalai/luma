@@ -11,7 +11,11 @@ import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
 import type { Player, RoomStat } from '@repo/types';
 
-@WebSocketGateway()
+@WebSocketGateway({
+  cors: {
+    origin: '*',
+  },
+})
 export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly roomService: RoomsService) {}
   @WebSocketServer()

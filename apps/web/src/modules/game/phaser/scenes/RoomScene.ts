@@ -3,19 +3,23 @@ import { EventBus } from '../EventBus';
 import { initAnimations } from '../utils/animations';
 import { NetworkManager } from '../../networks/NetworkManager';
 import { movementInputManager } from '../utils/input';
+import type { RoomParams } from '../config';
 
-export class MainGame extends Scene {
+export class RoomScene extends Scene {
   constructor() {
-    super('MainGame');
+    super('RoomScene');
   }
 
+  public roomParams!: RoomParams;
   public players = new Map<string, Phaser.Physics.Arcade.Sprite>();
   public networkManager!: NetworkManager;
   public cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   public keys!: Record<string, Phaser.Input.Keyboard.Key>;
   public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
 
-  init() {}
+  init() {
+    this.roomParams = this.registry.get('roomParams') as RoomParams;
+  }
 
   preload() {
     this.load.spritesheet('character', '/assets/sprite/Female.png', {
@@ -43,7 +47,7 @@ export class MainGame extends Scene {
         this.mapLayers.push(l as Phaser.Tilemaps.TilemapLayer);
       });
     }
-    this.networkManager = new NetworkManager(this);
+    this.networkManager = new NetworkManager(this, this.roomParams);
 
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();

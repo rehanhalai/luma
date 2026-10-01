@@ -1,21 +1,28 @@
 import { io, Socket } from 'socket.io-client';
 import type { Player } from '@repo/types';
-import { MainGame } from '../phaser/scenes/MainGame';
+import { RoomScene } from '../phaser/scenes/RoomScene';
+import type { RoomParams } from '../phaser/config';
 import {
   handlePlayerMovement,
   setupSocketListeners,
 } from '../phaser/utils/animations';
 
 export class NetworkManager {
-  private scene: MainGame;
+  private scene: RoomScene;
   public socket: Socket;
+  public roomParams: RoomParams;
 
-  constructor(scene: MainGame) {
+  constructor(scene: RoomScene, roomParams: RoomParams) {
     this.scene = scene;
-    this.socket = io('http://localhost:3000', {
-      path: '/room',
+    this.roomParams = roomParams;
+
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    this.socket = io(API_URL, {
       query: {
-        name: 'rehan',
+        code: this.roomParams.roomCode,
+        name: this.roomParams.name,
+        avatar: this.roomParams.avatar,
       },
     });
     this.initListeners();

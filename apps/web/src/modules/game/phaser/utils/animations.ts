@@ -1,7 +1,7 @@
-import type { MainGame } from '../scenes/MainGame';
+import type { RoomScene } from '../scenes/RoomScene';
 import type { Player } from '@repo/types';
 
-export function setupSocketListeners(scene: MainGame, player: Player) {
+export function setupSocketListeners(scene: RoomScene, player: Player) {
   if (scene.players.has(player.id)) return;
   const sprite = scene.physics.add.sprite(player.x, player.y, 'character');
   sprite.setScale(2);
@@ -15,7 +15,7 @@ export function setupSocketListeners(scene: MainGame, player: Player) {
 }
 
 export function handlePlayerMovement(
-  scene: MainGame,
+  scene: RoomScene,
   id: string,
   newX: number,
   newY: number,
@@ -29,7 +29,7 @@ export function handlePlayerMovement(
   }
 }
 
-export function initAnimations(scene: MainGame) {
+export function initAnimations(scene: RoomScene) {
   scene.anims.create({
     key: 'walk-down',
     frames: scene.anims.generateFrameNumbers('character', {

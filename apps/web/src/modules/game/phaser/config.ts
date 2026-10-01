@@ -1,5 +1,5 @@
 import { AUTO, Game } from 'phaser';
-import { MainGame } from './scenes/MainGame';
+import { RoomScene } from './scenes/RoomScene';
 import Phaser from 'phaser';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -20,7 +20,7 @@ const config: Phaser.Types.Core.GameConfig = {
     antialiasGL: false,
     pixelArt: true,
   },
-  scene: [MainGame],
+  scene: [RoomScene],
 };
 
 export interface RoomParams {

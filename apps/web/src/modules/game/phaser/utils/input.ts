@@ -1,6 +1,6 @@
-import type { MainGame } from '../scenes/MainGame';
+import type { RoomScene } from '../scenes/RoomScene';
 
-export function movementInputManager(scene: MainGame) {
+export function movementInputManager(scene: RoomScene) {
   const mySprite = scene.players.get(scene.networkManager.socket.id!);
   if (!mySprite || !scene.cursors) return;
 

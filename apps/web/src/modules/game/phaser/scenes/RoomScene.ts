@@ -28,8 +28,11 @@ export class RoomScene extends Scene {
       frameWidth: 32,
       frameHeight: 32,
     });
-    this.load.image('tiles', '/assets/maps/tilemap_packed.png');
-    this.load.tilemapTiledJSON('map', '/assets/maps/town.json');
+    const mapData = this.roomParams?.map;
+    if (mapData) {
+      this.load.image('tiles', mapData.tilesetPath);
+      this.load.tilemapTiledJSON('map', mapData.jsonPath);
+    }
   }
   create() {
     this.cameras.main.setBackgroundColor(0x90ee90);

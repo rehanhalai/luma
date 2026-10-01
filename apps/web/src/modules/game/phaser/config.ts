@@ -23,10 +23,13 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [RoomScene],
 };
 
+import type { Map as GameMap } from '@repo/types';
+
 export interface RoomParams {
   roomCode: string;
   name: string;
   avatar: string;
+  map?: GameMap;
 }
 
 const StartGame = (parent: HTMLElement, roomParams?: RoomParams) => {

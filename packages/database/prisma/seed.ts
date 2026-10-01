@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaClient } from '../src/generated/client.js';
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
@@ -11,6 +11,11 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  console.log('clearing the db before seed');
+  await prisma.room.deleteMany({});
+  await prisma.map.deleteMany({});
+  await prisma.avatar.deleteMany({});
+
   console.log('🌱 Starting Seed...');
 
   // 1. Seed or Upsert Default Map
@@ -67,7 +72,10 @@ async function main() {
   }
 
   // 3. Scan sprites directory and categorize avatars
-  const spritesDir = path.resolve(__dirname, '../../web/public/assets/sprites');
+  const spritesDir = path.resolve(
+    __dirname,
+    '../../../apps/web/public/assets/sprites',
+  );
   const avatarData: Array<{
     name: string;
     key: string;
@@ -104,7 +112,9 @@ async function main() {
     }
   }
 
-  console.log(`🎭 Found ${avatarData.length} avatars across categories. Seeding to database...`);
+  console.log(
+    `🎭 Found ${avatarData.length} avatars across categories. Seeding to database...`,
+  );
 
   const result = await prisma.avatar.createMany({
     data: avatarData,

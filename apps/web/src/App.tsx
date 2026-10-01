@@ -1,10 +1,16 @@
-import { PhaserGame } from './PhaserGame';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { LobbyPage } from '@/modules/lobby/LobbyPage';
+import { GamePage } from '@/modules/game/GamePage';
 
 function App() {
   return (
-    <main>
-      <PhaserGame />
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LobbyPage />} />
+        <Route path="/room" element={<GamePage />} />
+        <Route path="/room/:id" element={<GamePage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

@@ -1,6 +1,6 @@
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
+  provider = "prisma-client"
+  output   = "../src/generated"
   moduleFormat = "cjs"
 }
 
@@ -13,6 +13,9 @@ model Map {
   name          String   // e.g. "Town Square"
   jsonPath      String   // e.g. "/assets/maps/town.json" (for Phaser)
   tilesetPath   String
+
+  width         Int      @default(3840) 
+  height        Int      @default(2880)
 
   spawnX        Int   @default(100)
   spawnY        Int   @default(100)

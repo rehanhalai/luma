@@ -1,34 +1,38 @@
 import { Scene } from 'phaser';
 import { EventBus } from '../EventBus';
 import { initAnimations } from '../utils/animations';
-import { NetworkManager } from '../networks/NetworkManager';
+import { NetworkManager } from '../../networks/NetworkManager';
 import { movementInputManager } from '../utils/input';
+import type { RoomParams } from '../config';
 
-export interface Player {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-}
-
-export class MainGame extends Scene {
+export class RoomScene extends Scene {
   constructor() {
-    super('MainGame');
+    super('RoomScene');
   }
 
+  public roomParams!: RoomParams;
   public players = new Map<string, Phaser.Physics.Arcade.Sprite>();
   public networkManager!: NetworkManager;
   public cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  public keys!: Record<string, Phaser.Input.Keyboard.Key>;
+  public keys!: Record<'w' | 's' | 'a' | 'd', Phaser.Input.Keyboard.Key>;
   public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
 
+  init() {
+    this.roomParams = this.registry.get('roomParams') as RoomParams;
+  }
+
   preload() {
-    this.load.spritesheet('character', '/assets/sprite/Female.png', {
+    const avatarPath = this.roomParams?.avatar;
+
+    this.load.spritesheet(avatarPath, avatarPath, {
       frameWidth: 32,
       frameHeight: 32,
     });
-    this.load.image('tiles', '/assets/maps/tilemap_packed.png');
-    this.load.tilemapTiledJSON('map', '/assets/maps/town.json');
+    const mapData = this.roomParams?.map;
+    if (mapData) {
+      this.load.image('tiles', mapData.tilesetPath);
+      this.load.tilemapTiledJSON('map', mapData.jsonPath);
+    }
   }
   create() {
     this.cameras.main.setBackgroundColor(0x90ee90);
@@ -48,7 +52,7 @@ export class MainGame extends Scene {
         this.mapLayers.push(l as Phaser.Tilemaps.TilemapLayer);
       });
     }
-    this.networkManager = new NetworkManager(this);
+    this.networkManager = new NetworkManager(this, this.roomParams);
 
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();

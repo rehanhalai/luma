@@ -31,7 +31,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate prisma client
-        run: pnpm --filter api exec prisma generate
+        run: pnpm --filter @repo/database exec prisma generate
 
       - name: Run checks (Lint & Build)
         run: pnpm turbo run lint build

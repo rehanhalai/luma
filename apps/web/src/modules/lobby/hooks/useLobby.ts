@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getRooms, getAvatars, getAvatarCategories } from './lobby.api';
+import { getRooms, getAvatars, getAvatarCategories } from '../api/lobby.api';
 import type { Room, Avatar } from '@repo/types';
 
 export function useLobby() {

@@ -1,4 +1,4 @@
-import { useLobby } from './useLobby';
+import { useLobby } from './hooks/useLobby';
 import { AvatarSelectorCard } from './components/AvatarSelectorCard';
 import { PlayerNameCard } from './components/PlayerNameCard';
 import { RoomList } from './components/RoomList';
@@ -31,9 +31,7 @@ export function LobbyPage() {
           </p>
         </header>
 
-        {/* Grid layout: col-span-2 on left for avatars, right side with username input and rooms */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Left Column (col-span-2): Avatars List */}
           <div className="lg:col-span-2">
             <AvatarSelectorCard
               avatars={avatars}
@@ -46,17 +44,15 @@ export function LobbyPage() {
             />
           </div>
 
-          {/* Right Column: 2 rows (Username field, then Room list) */}
-          <div className="lg:col-span-1 flex flex-col gap-5">
-            {/* Row 1: Smaller username input field */}
+          
+          <div className="lg:col-span-1 flex flex-col gap-5"> 
             <PlayerNameCard
               name={name}
               onNameChange={setName}
               selectedAvatar={avatar}
               selectedAvatarObj={selectedAvatarObj}
             />
-
-            {/* Row 2: List of rooms under that */}
+ 
             <RoomList
               rooms={rooms}
               isLoading={isLoading}

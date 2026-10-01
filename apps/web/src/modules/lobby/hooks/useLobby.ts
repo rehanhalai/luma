@@ -6,7 +6,7 @@ import type { Room, Avatar } from '@repo/types';
 export function useLobby() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [avatar, setAvatar] = useState('Female');
+  const [avatar, setAvatar] = useState('Female-01-1');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [avatars, setAvatars] = useState<Avatar[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -93,8 +93,10 @@ export function useLobby() {
 
   const handleJoinRoom = (roomCode: string) => {
     const finalName = name.trim() || 'Guest';
+    const avatarToUse =
+      selectedAvatarObj?.path || '/assets/sprites/Female/Female-01-1.webp';
     navigate(
-      `/room?code=${encodeURIComponent(roomCode)}&name=${encodeURIComponent(finalName)}&avatar=${encodeURIComponent(avatar)}`,
+      `/room?code=${encodeURIComponent(roomCode)}&name=${encodeURIComponent(finalName)}&avatar=${encodeURIComponent(avatarToUse)}`,
     );
   };
 

@@ -22,7 +22,9 @@ export class RoomScene extends Scene {
   }
 
   preload() {
-    this.load.spritesheet('character', '/assets/sprite/Female.png', {
+    const avatarPath = this.roomParams?.avatar;
+
+    this.load.spritesheet('character', avatarPath, {
       frameWidth: 32,
       frameHeight: 32,
     });

@@ -13,8 +13,8 @@ export const GamePage = forwardRef<IRefPhaserGame>(
 
     const [roomParams] = useState<RoomParams>({
       roomCode: searchParams.get("code") || "",
-      name: searchParams.get("name") || "Guest",
-      avatar: searchParams.get("avatar") || "Female",
+      name: searchParams.get("name") || "",
+      avatar: searchParams.get("avatar") || "",
     });
 
     const gameRef = useRef<Phaser.Game | null>(null);

@@ -12,7 +12,7 @@ export class RoomsController {
   }
 
   @Get(':code')
-  findOne(@Param('code') code: string): Promise<Room | null> {
+  findOne(@Param('code') code: string): Promise<Room> {
     return this.roomsService.findOne(code);
   }
 }

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import type { Room, RoomWithMap } from '@repo/types';
+import { invariant } from 'src/common/invariant';
 
 @Injectable()
 export class RoomsService {
@@ -14,30 +15,33 @@ export class RoomsService {
     return this.prisma.room.findMany();
   }
 
-  async findOne(code: string): Promise<Room | null> {
-    if (!code) {
-      throw new BadRequestException('Room code is required');
-    }
+  async findOne(code: string): Promise<Room> {
+    invariant(code, new BadRequestException('Room code is required'));
+
     const room = await this.prisma.room.findUnique({
       where: { code },
     });
-    if (!room) {
-      throw new NotFoundException(`Room with code ${code} not found`);
-    }
+    invariant(
+      room,
+      new NotFoundException(`Room with code "${code}" not found`),
+    );
+
     return room;
   }
 
-  async findOneWithMap(code: string): Promise<RoomWithMap | null> {
-    if (!code) {
-      throw new BadRequestException('Room code is required');
-    }
+  async findOneWithMap(code: string): Promise<RoomWithMap> {
+    invariant(code, new BadRequestException('Room code is required'));
+
     const room = await this.prisma.room.findUnique({
       where: { code },
       include: { map: true },
     });
-    if (!room) {
-      throw new NotFoundException(`Room with code ${code} not found`);
-    }
+
+    invariant(
+      room,
+      new NotFoundException(`Room with code "${code}" not found`),
+    );
+
     return room;
   }
 }

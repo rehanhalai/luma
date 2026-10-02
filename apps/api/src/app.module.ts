@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { AvatarsModule } from './avatars/avatars.module';
+import { MapsModule } from './maps/maps.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { AvatarsModule } from './avatars/avatars.module';
     PrismaModule,
     RoomsModule,
     AvatarsModule,
+    MapsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

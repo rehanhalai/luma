@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { parseArgs, printHelp, SAMPLE_AVATARS, BOT_NAMES } from './config.js';
 import { BotClient, RoomBounds } from './BotClient.js';
+import { BotCollisionGrid } from './collision.js';
 
 interface RoomResponse {
   id: number;
@@ -11,13 +12,14 @@ interface RoomResponse {
     height?: number;
     spawnX?: number;
     spawnY?: number;
+    mapData?: any;
   };
 }
 
 async function resolveRoom(
   apiUrl: string,
   explicitCode?: string,
-): Promise<{ code: string; bounds: RoomBounds }> {
+): Promise<{ code: string; bounds: RoomBounds; mapData?: any }> {
   const defaultBounds: RoomBounds = {
     minX: 60,
     maxX: 3500,
@@ -32,17 +34,17 @@ async function resolveRoom(
       );
       if (res.ok) {
         const room: RoomResponse = await res.json();
-        if (room?.map?.width && room?.map?.height) {
-          return {
-            code: explicitCode,
-            bounds: {
-              minX: 60,
-              maxX: Math.max(300, room.map.width - 60),
-              minY: 60,
-              maxY: Math.max(300, room.map.height - 60),
-            },
-          };
-        }
+        const bounds: RoomBounds = {
+          minX: 60,
+          maxX: Math.max(300, (room.map?.width || 3600) - 60),
+          minY: 60,
+          maxY: Math.max(300, (room.map?.height || 2100) - 60),
+        };
+        return {
+          code: explicitCode,
+          bounds,
+          mapData: room.map?.mapData,
+        };
       }
     } catch {
       // API might not have HTTP open or custom room
@@ -65,16 +67,29 @@ async function resolveRoom(
 
     const firstRoom = rooms[0];
     if (!firstRoom) {
-      throw new Error('first room not found in for default room value');
+      throw new Error('First room not found in room list');
     }
+
+    // Fetch full details of the room to get map and mapData
+    const detailRes = await fetch(
+      `${apiUrl}/rooms/${encodeURIComponent(firstRoom.code)}`,
+    );
+    const fullRoom: RoomResponse = detailRes.ok
+      ? await detailRes.json()
+      : firstRoom;
+
     const bounds: RoomBounds = {
       minX: 60,
-      maxX: Math.max(300, (firstRoom.map?.width || 3600) - 60),
+      maxX: Math.max(300, (fullRoom.map?.width || 3600) - 60),
       minY: 60,
-      maxY: Math.max(300, (firstRoom.map?.height || 2100) - 60),
+      maxY: Math.max(300, (fullRoom.map?.height || 2100) - 60),
     };
 
-    return { code: firstRoom.code, bounds };
+    return {
+      code: fullRoom.code,
+      bounds,
+      mapData: fullRoom.map?.mapData,
+    };
   } catch (err: any) {
     throw new Error(
       `Could not auto-detect active rooms from ${apiUrl}/rooms (${err.message}).\n` +
@@ -109,11 +124,26 @@ async function main() {
   console.log('\n🤖 \x1b[1m\x1b[36mLuma Automated Bot Simulator\x1b[0m');
   console.log(`📡 Connecting to API: \x1b[33m${config.apiUrl}\x1b[0m`);
 
-  const { code: roomCode, bounds } = await resolveRoom(
-    config.apiUrl,
-    config.roomCode,
-  );
+  const {
+    code: roomCode,
+    bounds,
+    mapData,
+  } = await resolveRoom(config.apiUrl, config.roomCode);
   const avatars = await fetchAvatars(config.apiUrl);
+
+  let collision: BotCollisionGrid | undefined;
+  if (mapData) {
+    try {
+      collision = new BotCollisionGrid(mapData);
+      console.log(
+        `🛡️  Collision Grid: \x1b[32m${collision.width}x${collision.height} tiles\x1b[0m (${collision.worldWidth}x${collision.worldHeight}px world)`,
+      );
+    } catch (err: any) {
+      console.warn(
+        `⚠️  Could not initialize collision grid: ${err.message}`,
+      );
+    }
+  }
 
   console.log(`📍 Target Room: \x1b[32m${roomCode}\x1b[0m`);
   console.log(
@@ -140,6 +170,7 @@ async function main() {
       config.stepSpeed,
       config.intervalMs,
       bounds,
+      collision,
     );
 
     try {
@@ -163,7 +194,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('\n🎮 \x1b[32mAll bots are wandering in the room!\x1b[0m');
+  console.log('\n🎮 \x1b[32mAll bots are wandering with collision navigation!\x1b[0m');
   console.log(
     '   Open your browser at \x1b[4mhttp://localhost:5173\x1b[0m to see them running visually.',
   );
@@ -171,7 +202,7 @@ async function main() {
     '   Press \x1b[1mCtrl+C\x1b[0m to cleanly disconnect all bots.\n',
   );
 
-  // Periodic heartbeat / status output every 4 seconds
+  // Periodic heartbeat / status output every 3 seconds
   const statusTimer = setInterval(() => {
     const activeCount = bots.filter((b) => b.isConnected).length;
     const totalPackets = bots.reduce((acc, b) => acc + b.state.packetsSent, 0);

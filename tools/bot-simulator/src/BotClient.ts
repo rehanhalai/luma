@@ -5,6 +5,7 @@ import {
   pickNewWaypoint,
   Direction,
 } from './behaviors.js';
+import type { BotCollisionGrid } from './collision.js';
 
 export interface RoomBounds {
   minX: number;
@@ -27,6 +28,7 @@ export class BotClient {
     private stepSpeed: number,
     private intervalMs: number,
     private bounds: RoomBounds = { minX: 50, maxX: 3500, minY: 50, maxY: 2000 },
+    public collision?: BotCollisionGrid,
   ) {
     this.state = {
       x: 0,
@@ -76,6 +78,7 @@ export class BotClient {
         const wp = pickNewWaypoint(
           this.state.x,
           this.state.y,
+          this.collision,
           this.bounds.minX,
           this.bounds.maxX,
           this.bounds.minY,
@@ -86,6 +89,28 @@ export class BotClient {
 
         this.startMovementLoop();
       });
+
+      // Authoritative collision recovery: if server sends snapback, re-anchor bot & turn away
+      this.socket.on(
+        'playerMoved',
+        (data: { id: string; x: number; y: number; direction: Direction }) => {
+          if (data.id === this.socket?.id && data.direction === 'stop') {
+            this.state.x = data.x;
+            this.state.y = data.y;
+            const wp = pickNewWaypoint(
+              this.state.x,
+              this.state.y,
+              this.collision,
+              this.bounds.minX,
+              this.bounds.maxX,
+              this.bounds.minY,
+              this.bounds.maxY,
+            );
+            this.state.targetX = wp.targetX;
+            this.state.targetY = wp.targetY;
+          }
+        },
+      );
 
       this.socket.on('error', (errMsg) => {
         console.error(`  ⚠️ [${this.name}] Server error: ${errMsg}`);
@@ -102,6 +127,7 @@ export class BotClient {
       const { x, y, direction } = computeNextStep(
         this.state,
         this.stepSpeed,
+        this.collision,
         this.bounds.minX,
         this.bounds.maxX,
         this.bounds.minY,

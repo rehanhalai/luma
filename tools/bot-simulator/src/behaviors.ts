@@ -1,3 +1,5 @@
+import type { BotCollisionGrid } from './collision.js';
+
 export type Direction = 'up' | 'down' | 'left' | 'right' | 'stop';
 
 export interface BotState {
@@ -8,32 +10,72 @@ export interface BotState {
   direction: Direction;
   pauseTicksRemaining: number;
   packetsSent: number;
+  stuckTicks?: number;
 }
 
 export function pickNewWaypoint(
   currentX: number,
   currentY: number,
+  collision?: BotCollisionGrid,
   minX = 100,
   maxX = 3500,
   minY = 100,
   maxY = 2000,
-) {
-  // Distance to wander per path segment (between 120 and 350 pixels)
-  const distance = 120 + Math.random() * 230;
-  const angle = Math.random() * Math.PI * 2;
+): { targetX: number; targetY: number } {
+  // If collision grid is available, pick a candidate that is guaranteed walkable
+  const maxAttempts = 30;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Distance to wander per path segment (between 100 and 300 pixels)
+    const distance = 100 + Math.random() * 200;
+    const angle = Math.random() * Math.PI * 2;
 
-  const rawX = Math.round(currentX + Math.cos(angle) * distance);
-  const rawY = Math.round(currentY + Math.sin(angle) * distance);
+    const rawX = Math.round(currentX + Math.cos(angle) * distance);
+    const rawY = Math.round(currentY + Math.sin(angle) * distance);
 
-  const targetX = Math.max(minX, Math.min(maxX, rawX));
-  const targetY = Math.max(minY, Math.min(maxY, rawY));
+    const targetX = Math.max(minX, Math.min(maxX, rawX));
+    const targetY = Math.max(minY, Math.min(maxY, rawY));
 
-  return { targetX, targetY };
+    if (!collision || collision.isWalkable(targetX, targetY)) {
+      return { targetX, targetY };
+    }
+  }
+
+  // Fallback directional searches if random attempts hit obstacles
+  if (collision) {
+    const angles = [
+      0,
+      Math.PI / 4,
+      Math.PI / 2,
+      (3 * Math.PI) / 4,
+      Math.PI,
+      (5 * Math.PI) / 4,
+      (3 * Math.PI) / 2,
+      (7 * Math.PI) / 4,
+    ];
+    for (const d of [120, 80, 50]) {
+      for (const a of angles) {
+        const tx = Math.max(
+          minX,
+          Math.min(maxX, Math.round(currentX + Math.cos(a) * d)),
+        );
+        const ty = Math.max(
+          minY,
+          Math.min(maxY, Math.round(currentY + Math.sin(a) * d)),
+        );
+        if (collision.isWalkable(tx, ty)) {
+          return { targetX: tx, targetY: ty };
+        }
+      }
+    }
+  }
+
+  return { targetX: currentX, targetY: currentY };
 }
 
 export function computeNextStep(
   state: BotState,
   speed: number,
+  collision?: BotCollisionGrid,
   minX = 50,
   maxX = 3600,
   minY = 50,
@@ -54,8 +96,17 @@ export function computeNextStep(
   if (dist < speed) {
     state.x = state.targetX;
     state.y = state.targetY;
+    state.stuckTicks = 0;
 
-    const nextWp = pickNewWaypoint(state.x, state.y, minX, maxX, minY, maxY);
+    const nextWp = pickNewWaypoint(
+      state.x,
+      state.y,
+      collision,
+      minX,
+      maxX,
+      minY,
+      maxY,
+    );
     state.targetX = nextWp.targetX;
     state.targetY = nextWp.targetY;
 
@@ -67,32 +118,97 @@ export function computeNextStep(
     }
   }
 
-  // Move along the axis that has the largest delta
-  let direction: Direction = 'down';
-  let nextX = state.x;
-  let nextY = state.y;
+  // Attempt movement along primary axis first, or slide along secondary axis if blocked
+  const preferX = Math.abs(dx) >= Math.abs(dy);
 
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    if (dx > 0) {
-      nextX = Math.min(maxX, state.x + Math.min(speed, dx));
-      direction = 'right';
-    } else {
-      nextX = Math.max(minX, state.x - Math.min(speed, -dx));
-      direction = 'left';
+  // Candidate move along X
+  let candX = state.x;
+  let dirX: Direction = 'right';
+  if (dx > 0) {
+    candX = Math.min(maxX, state.x + Math.min(speed, dx));
+    dirX = 'right';
+  } else if (dx < 0) {
+    candX = Math.max(minX, state.x - Math.min(speed, -dx));
+    dirX = 'left';
+  }
+
+  // Candidate move along Y
+  let candY = state.y;
+  let dirY: Direction = 'down';
+  if (dy > 0) {
+    candY = Math.min(maxY, state.y + Math.min(speed, dy));
+    dirY = 'down';
+  } else if (dy < 0) {
+    candY = Math.max(minY, state.y - Math.min(speed, -dy));
+    dirY = 'up';
+  }
+
+  let finalX = state.x;
+  let finalY = state.y;
+  let finalDir: Direction = 'stop';
+  let moved = false;
+
+  if (preferX) {
+    // Try primary X
+    if (candX !== state.x && (!collision || collision.isWalkable(candX, state.y))) {
+      finalX = candX;
+      finalY = state.y;
+      finalDir = dirX;
+      moved = true;
+    } else if (
+      candY !== state.y &&
+      (!collision || collision.isWalkable(state.x, candY))
+    ) {
+      // Slide along Y
+      finalX = state.x;
+      finalY = candY;
+      finalDir = dirY;
+      moved = true;
     }
   } else {
-    if (dy > 0) {
-      nextY = Math.min(maxY, state.y + Math.min(speed, dy));
-      direction = 'down';
-    } else {
-      nextY = Math.max(minY, state.y - Math.min(speed, -dy));
-      direction = 'up';
+    // Try primary Y
+    if (candY !== state.y && (!collision || collision.isWalkable(state.x, candY))) {
+      finalX = state.x;
+      finalY = candY;
+      finalDir = dirY;
+      moved = true;
+    } else if (
+      candX !== state.x &&
+      (!collision || collision.isWalkable(candX, state.y))
+    ) {
+      // Slide along X
+      finalX = candX;
+      finalY = state.y;
+      finalDir = dirX;
+      moved = true;
     }
   }
 
-  state.x = nextX;
-  state.y = nextY;
-  state.direction = direction;
+  if (moved) {
+    state.x = finalX;
+    state.y = finalY;
+    state.direction = finalDir;
+    state.stuckTicks = 0;
+    return { x: finalX, y: finalY, direction: finalDir };
+  }
 
-  return { x: nextX, y: nextY, direction };
+  // If blocked in both directions, handle obstacle
+  state.stuckTicks = (state.stuckTicks || 0) + 1;
+  if (state.stuckTicks >= 2) {
+    const newWp = pickNewWaypoint(
+      state.x,
+      state.y,
+      collision,
+      minX,
+      maxX,
+      minY,
+      maxY,
+    );
+    state.targetX = newWp.targetX;
+    state.targetY = newWp.targetY;
+    state.stuckTicks = 0;
+  }
+
+  state.direction = 'stop';
+  return { x: state.x, y: state.y, direction: 'stop' };
 }

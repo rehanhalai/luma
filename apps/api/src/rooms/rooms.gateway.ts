@@ -10,6 +10,11 @@ import {
 import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
 import type { Player, RoomStat } from '@repo/types';
+import { CollisionGrid } from './collision/collision-grid';
+
+interface ServerRoomStat extends RoomStat {
+  collisionGrid?: CollisionGrid;
+}
 
 @WebSocketGateway({
   cors: {
@@ -21,7 +26,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  private rooms = new Map<string, RoomStat>();
+  private rooms = new Map<string, ServerRoomStat>();
 
   async handleConnection(client: Socket) {
     const Avatar = Array.isArray(client.handshake.query.avatar)
@@ -65,6 +70,9 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         width: room.map.width,
         height: room.map.height,
         players: new Map(),
+        collisionGrid: room.map.mapData
+          ? new CollisionGrid(room.map.mapData)
+          : undefined,
       };
       this.rooms.set(code, roomState);
     }
@@ -94,15 +102,30 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const player = roomState?.players.get(client.id);
 
     if (player && roomState) {
-      player.x = Math.max(0, Math.min(roomState.width - 10, data.x));
-      player.y = Math.max(0, Math.min(roomState.height - 10, data.y));
+      const isWalkable = roomState.collisionGrid
+        ? roomState.collisionGrid.isWalkableWorld(data.x, data.y)
+        : true;
 
-      client.broadcast.to(client.data.roomCode).emit('playerMoved', {
-        id: client.id,
-        x: player.x,
-        y: player.y,
-        direction: data.direction,
-      });
+      if (isWalkable) {
+        player.x = data.x;
+        player.y = data.y;
+
+        client.broadcast.to(client.data.roomCode).emit('playerMoved', {
+          id: client.id,
+          x: player.x,
+          y: player.y,
+          direction: data.direction,
+        });
+      } else {
+        // Move was blocked by a solid wall/obstacle.
+        // Emit snapback correction to the client with their last valid coordinates
+        client.emit('playerMoved', {
+          id: client.id,
+          x: player.x,
+          y: player.y,
+          direction: 'stop',
+        });
+      }
     }
   }
 

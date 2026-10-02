@@ -6,8 +6,10 @@ import type { Room, Map } from '@repo/types';
 export class RoomsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
-    const rooms = await this.prisma.room.findMany();
+  async findAll(): Promise<(Room & { map: Map })[]> {
+    const rooms = await this.prisma.room.findMany({
+      include: { map: true },
+    });
     return rooms;
   }
 

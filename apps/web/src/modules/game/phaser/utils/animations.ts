@@ -115,10 +115,6 @@ export function setupSocketListeners(scene: RoomScene, player: Player) {
     nameTag.destroy();
   });
 
-  scene.mapLayers.forEach((layer) => {
-    scene.physics.add.collider(sprite, layer);
-  });
-
   if (player.id === scene.networkManager.socket.id) {
     scene.cameras.main.startFollow(sprite);
   }

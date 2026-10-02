@@ -14,6 +14,8 @@ import { CollisionGrid } from './collision/collision-grid';
 
 interface ServerRoomStat extends RoomStat {
   collisionGrid?: CollisionGrid;
+  spawnX: number;
+  spawnY: number;
 }
 
 @WebSocketGateway({
@@ -56,20 +58,21 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const room = await this.roomService.findOneWithMap(code);
-    if (!room) {
-      client.emit('error', 'room not found');
-      client.disconnect();
-      return;
-    }
-
     let roomState = this.rooms.get(code);
 
     if (!roomState) {
+      const room = await this.roomService.findOneWithMap(code);
+      if (!room) {
+        client.emit('error', 'room not found');
+        client.disconnect();
+        return;
+      }
       roomState = {
         width: room.map.width,
         height: room.map.height,
         players: new Map(),
+        spawnX: room.map.spawnX,
+        spawnY: room.map.spawnY,
         collisionGrid: room.map.mapData
           ? new CollisionGrid(room.map.mapData)
           : undefined,
@@ -81,8 +84,8 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       id: client.id,
       name: PlayerName,
       avatar: Avatar,
-      x: room.map.spawnX,
-      y: room.map.spawnY,
+      x: roomState.spawnX,
+      y: roomState.spawnY,
     };
     roomState.players.set(client.id, newPlayer);
 

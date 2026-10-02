@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getRoom, type RoomWithMap } from '../api/game.api';
+import { getRoom, getMap, type RoomWithMap } from '../api/game.api';
 import type { RoomParams } from '../phaser/config';
 
 export function useRoom() {
@@ -26,9 +26,10 @@ export function useRoom() {
 
       try {
         setIsLoading(true);
-        const data = await getRoom(roomCode);
+        const room = await getRoom(roomCode);
+        const map = await getMap(room.mapId);
         if (isMounted) {
-          setRoomData(data);
+          setRoomData({ ...room, map });
         }
       } catch (err: unknown) {
         if (isMounted) {

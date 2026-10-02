@@ -7,13 +7,29 @@ interface RoomResponse {
   id: number;
   code: string;
   name: string;
-  map?: {
-    width?: number;
-    height?: number;
-    spawnX?: number;
-    spawnY?: number;
-    mapData?: any;
-  };
+  mapId: number;
+}
+
+interface MapResponse {
+  id: number;
+  width: number;
+  height: number;
+  mapData: any;
+}
+
+async function fetchMap(
+  apiUrl: string,
+  mapId: number,
+): Promise<MapResponse | null> {
+  try {
+    const res = await fetch(`${apiUrl}/maps/${mapId}`);
+    if (res.ok) {
+      return res.json();
+    }
+  } catch {
+    // fallback
+  }
+  return null;
 }
 
 async function resolveRoom(
@@ -34,16 +50,17 @@ async function resolveRoom(
       );
       if (res.ok) {
         const room: RoomResponse = await res.json();
+        const map = await fetchMap(apiUrl, room.mapId);
         const bounds: RoomBounds = {
           minX: 60,
-          maxX: Math.max(300, (room.map?.width || 3600) - 60),
+          maxX: Math.max(300, (map?.width || 3600) - 60),
           minY: 60,
-          maxY: Math.max(300, (room.map?.height || 2100) - 60),
+          maxY: Math.max(300, (map?.height || 2100) - 60),
         };
         return {
           code: explicitCode,
           bounds,
-          mapData: room.map?.mapData,
+          mapData: map?.mapData,
         };
       }
     } catch {
@@ -70,25 +87,19 @@ async function resolveRoom(
       throw new Error('First room not found in room list');
     }
 
-    // Fetch full details of the room to get map and mapData
-    const detailRes = await fetch(
-      `${apiUrl}/rooms/${encodeURIComponent(firstRoom.code)}`,
-    );
-    const fullRoom: RoomResponse = detailRes.ok
-      ? await detailRes.json()
-      : firstRoom;
+    const map = await fetchMap(apiUrl, firstRoom.mapId);
 
     const bounds: RoomBounds = {
       minX: 60,
-      maxX: Math.max(300, (fullRoom.map?.width || 3600) - 60),
+      maxX: Math.max(300, (map?.width || 3600) - 60),
       minY: 60,
-      maxY: Math.max(300, (fullRoom.map?.height || 2100) - 60),
+      maxY: Math.max(300, (map?.height || 2100) - 60),
     };
 
     return {
-      code: fullRoom.code,
+      code: firstRoom.code,
       bounds,
-      mapData: fullRoom.map?.mapData,
+      mapData: map?.mapData,
     };
   } catch (err: any) {
     throw new Error(
@@ -194,7 +205,9 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('\n🎮 \x1b[32mAll bots are wandering with collision navigation!\x1b[0m');
+  console.log(
+    '\n🎮 \x1b[32mAll bots are wandering with collision navigation!\x1b[0m',
+  );
   console.log(
     '   Open your browser at \x1b[4mhttp://localhost:5173\x1b[0m to see them running visually.',
   );

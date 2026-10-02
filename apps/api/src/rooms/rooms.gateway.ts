@@ -56,7 +56,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const room = await this.roomService.findOne(code);
+    const room = await this.roomService.findOneWithMap(code);
     if (!room) {
       client.emit('error', 'room not found');
       client.disconnect();

@@ -1,26 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { CreateMapDto } from './dto/create-map.dto';
-import { UpdateMapDto } from './dto/update-map.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import type { Map } from '@repo/types';
 
 @Injectable()
 export class MapsService {
-  create(createMapDto: CreateMapDto) {
-    return 'This action adds a new map';
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return `This action returns all maps`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} map`;
-  }
-
-  update(id: number, updateMapDto: UpdateMapDto) {
-    return `This action updates a #${id} map`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} map`;
+  async findOne(id: number): Promise<Map> {
+    const map = await this.prisma.map.findUnique({
+      where: { id },
+    });
+    if (!map) {
+      throw new NotFoundException(`Map with ID ${id} not found`);
+    }
+    return map;
   }
 }

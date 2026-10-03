@@ -11,17 +11,18 @@ datasource db {
 model Map {
   id            Int      @id @default(autoincrement())
   name          String   // e.g. "Town Square"
-  jsonPath      String   // e.g. "/assets/maps/town.json" (for Phaser)
   tilesetPath   String
 
   width         Int      @default(3840) 
   height        Int      @default(2880)
 
-  spawnX        Int   @default(100)
-  spawnY        Int   @default(100)
+  spawnX        Int      @default(100)
+  spawnY        Int      @default(100)
+
+  mapData       Json     // Full Tiled map JSON (layers, tilesets, collision properties)
 
   // A map can be used by multiple rooms
-  rooms     Room[]
+  rooms         Room[]
   createdAt     DateTime @default(now())
 }
 

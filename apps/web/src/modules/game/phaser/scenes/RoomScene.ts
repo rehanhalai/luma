@@ -31,7 +31,10 @@ export class RoomScene extends Scene {
     const mapData = this.roomParams?.map;
     if (mapData) {
       this.load.image('tiles', mapData.tilesetPath);
-      this.load.tilemapTiledJSON('map', mapData.jsonPath);
+      const rawMap = mapData.mapData;
+      if (rawMap && typeof rawMap === 'object') {
+        this.load.tilemapTiledJSON('map', rawMap);
+      }
     }
   }
   create() {

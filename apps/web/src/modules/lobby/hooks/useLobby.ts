@@ -67,8 +67,8 @@ export function useLobby() {
         );
         if (isMounted) {
           setAvatars(data);
-          if (data.length > 0 && !avatar) {
-            setAvatar(data[0].name);
+          if (data.length > 0) {
+            setAvatar((current) => current || data[0].name);
           }
         }
       } catch (err) {
@@ -92,9 +92,10 @@ export function useLobby() {
   }, [avatars, avatar]);
 
   const handleJoinRoom = (roomCode: string) => {
+    if (!selectedAvatarObj) return;
+
     const finalName = name.trim() || 'Guest';
-    const avatarToUse =
-      selectedAvatarObj?.path || '/assets/sprites/Female/Female-01-1.webp';
+    const avatarToUse = selectedAvatarObj.path;
     navigate(
       `/room?code=${encodeURIComponent(roomCode)}&name=${encodeURIComponent(finalName)}&avatar=${encodeURIComponent(avatarToUse)}`,
     );

@@ -1,5 +1,7 @@
 import type { RoomScene } from '../scenes/RoomScene';
 
+const THROTTLE_MS = 50;
+
 export function movementInputManager(scene: RoomScene) {
   const mySprite = scene.players.get(scene.networkManager.socket.id!);
   if (!mySprite || !scene.cursors || !scene.keys) return;
@@ -36,20 +38,40 @@ export function movementInputManager(scene: RoomScene) {
     mySprite.setFrame(1);
   }
 
-  const nameTag = mySprite.getData('nameTag') as
-    | Phaser.GameObjects.Text
-    | undefined;
+  const nameTag = mySprite.getData('nameTag') as Phaser.GameObjects.Text;
   if (nameTag) {
     nameTag.setPosition(mySprite.x, mySprite.y - 36);
   }
 
+  const now = performance.now();
+  const lastSent = mySprite.getData('lastNetworkSent') as number;
   const prevDirection = (mySprite.getData('direction') as string) || 'stop';
 
   if (moved) {
-    mySprite.setData('direction', direction);
-    scene.networkManager.sendMovement(mySprite.x, mySprite.y, direction);
+    const directionChanged = direction !== prevDirection;
+    const timeToEmit = now - lastSent >= THROTTLE_MS;
+
+    // Send ONLY IF:
+    // 1. Player changed direction (e.g. turned from left to up)
+    // OR
+    // 2. 50ms have passed since the last packet
+
+    if (directionChanged || timeToEmit) {
+      mySprite.setData('direction', direction);
+      mySprite.setData('lastNetworkSent', now);
+      scene.networkManager.sendMovement(
+        Math.round(mySprite.x),
+        Math.round(mySprite.y),
+        direction,
+      );
+    }
   } else if (prevDirection !== 'stop') {
     mySprite.setData('direction', 'stop');
-    scene.networkManager.sendMovement(mySprite.x, mySprite.y, 'stop');
+    mySprite.setData('lastNetworkSent', now);
+    scene.networkManager.sendMovement(
+      Math.round(mySprite.x),
+      Math.round(mySprite.y),
+      'stop',
+    );
   }
 }

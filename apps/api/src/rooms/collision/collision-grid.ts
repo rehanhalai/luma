@@ -1,3 +1,34 @@
+interface TiledProperty {
+  name: string;
+  type?: string;
+  value: unknown;
+}
+
+interface TiledTile {
+  id: number;
+  properties?: TiledProperty[];
+}
+
+interface TiledTileset {
+  firstgid?: number;
+  name?: string;
+  tiles?: TiledTile[];
+}
+
+interface TiledLayer {
+  type: string;
+  data?: number[];
+}
+
+interface TiledMapData {
+  width?: number;
+  height?: number;
+  tilewidth?: number;
+  tileheight?: number;
+  tilesets?: TiledTileset[];
+  layers?: TiledLayer[];
+}
+
 export class CollisionGrid {
   public readonly width: number;
   public readonly height: number;
@@ -6,11 +37,12 @@ export class CollisionGrid {
   public readonly worldHeight: number;
   private readonly grid: Uint8Array; // 1 = solid, 0 = walkable
 
-  constructor(rawMapData: any, scale = 3) {
-    const mapData =
+  constructor(rawMapData: unknown, scale = 3) {
+    const mapData = (
       typeof rawMapData === 'string'
         ? JSON.parse(rawMapData)
-        : rawMapData || {};
+        : rawMapData || {}
+    ) as TiledMapData;
 
     this.width = mapData.width || 80;
     this.height = mapData.height || 60;
@@ -25,7 +57,7 @@ export class CollisionGrid {
     this.grid = this.buildGrid(mapData.layers, solidGids);
   }
 
-  private extractSolidGids(tilesets: any): Set<number> {
+  private extractSolidGids(tilesets?: TiledTileset[]): Set<number> {
     const solidGids = new Set<number>();
     if (!Array.isArray(tilesets)) {
       return solidGids;
@@ -35,13 +67,13 @@ export class CollisionGrid {
       if (!Array.isArray(ts.tiles)) {
         continue;
       }
-      const firstgid = ts.firstgid ?? 1;
+      const firstgid = typeof ts.firstgid === 'number' ? ts.firstgid : 1;
       for (const tile of ts.tiles) {
         const isSolid = tile.properties?.some(
-          (p: any) => p.name === 'collide' && p.value === true,
+          (p) => p.name === 'collide' && p.value === true,
         );
         if (isSolid) {
-          solidGids.add(firstgid + tile.id);
+          solidGids.add(firstgid + Number(tile.id));
         }
       }
     }
@@ -49,7 +81,10 @@ export class CollisionGrid {
     return solidGids;
   }
 
-  private buildGrid(layers: any, solidGids: Set<number>): Uint8Array {
+  private buildGrid(
+    layers: TiledLayer[] | undefined,
+    solidGids: Set<number>,
+  ): Uint8Array {
     const grid = new Uint8Array(this.width * this.height);
     if (!Array.isArray(layers) || solidGids.size === 0) {
       return grid;
@@ -61,7 +96,8 @@ export class CollisionGrid {
       }
 
       for (let i = 0; i < layer.data.length; i++) {
-        const cleanGid = layer.data[i] & 0x1fffffff;
+        const rawGid = layer.data[i] ?? 0;
+        const cleanGid = rawGid & 0x1fffffff;
         if (solidGids.has(cleanGid)) {
           grid[i] = 1;
         }

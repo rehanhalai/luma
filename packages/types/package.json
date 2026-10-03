@@ -8,6 +8,18 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./socket": {
+      "types": "./src/socket.ts",
+      "default": "./src/socket.ts"
+    },
+    "./game": {
+      "types": "./src/game.ts",
+      "default": "./src/game.ts"
+    },
+    "./models": {
+      "types": "./src/models.ts",
+      "default": "./src/models.ts"
     }
   },
   "dependencies": {

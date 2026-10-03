@@ -9,16 +9,40 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
-import type { Player, RoomStat } from '@repo/types';
+import type { Player, RoomStat } from '@repo/types/game';
+import type {
+  ServerToClientEvents,
+  ClientToServerEvents,
+  MovementPayload,
+} from '@repo/types/socket';
 import { CollisionGrid } from './collision/collision-grid';
 
+interface ClientSocketData {
+  roomCode: string;
+}
+
+type ClientSocket = Socket<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  Record<string, never>,
+  ClientSocketData
+>;
+
+type GameServer = Server<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  Record<string, never>,
+  ClientSocketData
+>;
+
 interface ServerRoomStat extends RoomStat {
-  collisionGrid?: CollisionGrid;
+  collisionGrid: CollisionGrid;
   spawnX: number;
   spawnY: number;
 }
 
 @WebSocketGateway({
+  namespace: '/game',
   cors: {
     origin: '*',
   },
@@ -26,11 +50,11 @@ interface ServerRoomStat extends RoomStat {
 export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly roomService: RoomsService) {}
   @WebSocketServer()
-  server!: Server;
+  server!: GameServer;
 
   private rooms = new Map<string, ServerRoomStat>();
 
-  async handleConnection(client: Socket) {
+  async handleConnection(client: ClientSocket) {
     const Avatar = Array.isArray(client.handshake.query.avatar)
       ? client.handshake.query.avatar[0]
       : client.handshake.query.avatar;
@@ -73,9 +97,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         players: new Map(),
         spawnX: room.map.spawnX,
         spawnY: room.map.spawnY,
-        collisionGrid: room.map.mapData
-          ? new CollisionGrid(room.map.mapData)
-          : undefined,
+        collisionGrid: new CollisionGrid(room.map.mapData),
       };
       this.rooms.set(code, roomState);
     }
@@ -89,19 +111,20 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
     roomState.players.set(client.id, newPlayer);
 
-    client.join(code);
+    void client.join(code);
     client.data.roomCode = code;
 
     client.emit('currentPlayers', Array.from(roomState.players.values()));
-    client.to(code).emit('playerJoined', roomState.players.get(client.id));
+    client.to(code).emit('playerJoined', newPlayer);
   }
 
   @SubscribeMessage('movement')
   handleMovement(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { x: number; y: number; direction: string },
+    @ConnectedSocket() client: ClientSocket,
+    @MessageBody() data: MovementPayload,
   ) {
-    const roomState = this.rooms.get(client.data.roomCode);
+    const roomCode = client.data.roomCode || '';
+    const roomState = this.rooms.get(roomCode);
     const player = roomState?.players.get(client.id);
 
     if (player && roomState) {
@@ -113,15 +136,13 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         player.x = data.x;
         player.y = data.y;
 
-        client.broadcast.to(client.data.roomCode).emit('playerMoved', {
+        client.broadcast.to(roomCode).emit('playerMoved', {
           id: client.id,
           x: player.x,
           y: player.y,
           direction: data.direction,
         });
       } else {
-        // Move was blocked by a solid wall/obstacle.
-        // Emit snapback correction to the client with their last valid coordinates
         client.emit('playerMoved', {
           id: client.id,
           x: player.x,
@@ -132,13 +153,15 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  handleDisconnect(client: Socket) {
-    const code = client.data.roomCode;
+  handleDisconnect(client: ClientSocket) {
+    const code = client.data.roomCode || '';
     const roomState = this.rooms.get(code);
     if (roomState) {
       const player = roomState.players.get(client.id);
       roomState.players.delete(client.id);
-      this.server.to(code).emit('playerLeft', player);
+      if (player) {
+        this.server.to(code).emit('playerLeft', player);
+      }
       if (roomState.players.size === 0) {
         this.rooms.delete(code);
       }

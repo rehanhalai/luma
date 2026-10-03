@@ -1,5 +1,8 @@
 import { io, Socket } from 'socket.io-client';
-import type { Player } from '@repo/types';
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from '@repo/types/socket';
 import { RoomScene } from '../phaser/scenes/RoomScene';
 import type { RoomParams } from '../phaser/config';
 import {
@@ -9,7 +12,7 @@ import {
 
 export class NetworkManager {
   private scene: RoomScene;
-  public socket: Socket;
+  public socket: Socket<ServerToClientEvents, ClientToServerEvents>;
   public roomParams: RoomParams;
 
   constructor(scene: RoomScene, roomParams: RoomParams) {
@@ -18,7 +21,7 @@ export class NetworkManager {
 
     const API_URL = import.meta.env.VITE_API_URL;
 
-    this.socket = io(API_URL, {
+    this.socket = io(`${API_URL}/game`, {
       query: {
         code: this.roomParams.roomCode,
         name: this.roomParams.name,
@@ -29,17 +32,17 @@ export class NetworkManager {
   }
 
   private initListeners() {
-    this.socket.on('currentPlayers', (data: Player[]) => {
+    this.socket.on('currentPlayers', (data) => {
       data.forEach((player) => {
         setupSocketListeners(this.scene, player);
       });
     });
 
-    this.socket.on('playerJoined', (data: Player) => {
+    this.socket.on('playerJoined', (data) => {
       setupSocketListeners(this.scene, data);
     });
 
-    this.socket.on('playerLeft', (data: Player) => {
+    this.socket.on('playerLeft', (data) => {
       const rect = this.scene.players.get(data.id);
       if (rect) {
         rect.destroy();
@@ -47,18 +50,9 @@ export class NetworkManager {
       }
     });
 
-    this.socket.on(
-      'playerMoved',
-      (data: { id: string; x: number; y: number; direction: string }) => {
-        handlePlayerMovement(
-          this.scene,
-          data.id,
-          data.x,
-          data.y,
-          data.direction,
-        );
-      },
-    );
+    this.socket.on('playerMoved', (data) => {
+      handlePlayerMovement(this.scene, data.id, data.x, data.y, data.direction);
+    });
 
     this.scene.events.on('shutdown', () => {
       this.socket.disconnect();

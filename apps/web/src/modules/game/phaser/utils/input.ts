@@ -1,4 +1,5 @@
 import type { RoomScene } from '../scenes/RoomScene';
+import type { Direction } from '@repo/types';
 
 const THROTTLE_MS = 50;
 
@@ -7,7 +8,7 @@ export function movementInputManager(scene: RoomScene) {
   if (!mySprite || !scene.cursors || !scene.keys) return;
 
   let moved = false;
-  let direction: string = '';
+  let direction: Direction = 's';
   const speed = 200;
   mySprite.setVelocity(0);
 
@@ -15,24 +16,24 @@ export function movementInputManager(scene: RoomScene) {
 
   if (scene.cursors.left.isDown || scene.keys.a.isDown) {
     mySprite.setVelocityX(-speed);
-    mySprite.anims.play(`${avatarKey}-walk-left`, true);
+    mySprite.anims.play(`${avatarKey}-walk-l`, true);
     moved = true;
-    direction = 'left';
+    direction = 'l';
   } else if (scene.cursors.right.isDown || scene.keys.d.isDown) {
     mySprite.setVelocityX(speed);
-    mySprite.anims.play(`${avatarKey}-walk-right`, true);
+    mySprite.anims.play(`${avatarKey}-walk-r`, true);
     moved = true;
-    direction = 'right';
+    direction = 'r';
   } else if (scene.cursors.up.isDown || scene.keys.w.isDown) {
     mySprite.setVelocityY(-speed);
-    mySprite.anims.play(`${avatarKey}-walk-up`, true);
+    mySprite.anims.play(`${avatarKey}-walk-u`, true);
     moved = true;
-    direction = 'up';
+    direction = 'u';
   } else if (scene.cursors.down.isDown || scene.keys.s.isDown) {
     mySprite.setVelocityY(speed);
-    mySprite.anims.play(`${avatarKey}-walk-down`, true);
+    mySprite.anims.play(`${avatarKey}-walk-d`, true);
     moved = true;
-    direction = 'down';
+    direction = 'd';
   } else {
     mySprite.anims.stop();
     mySprite.setFrame(1);
@@ -45,7 +46,7 @@ export function movementInputManager(scene: RoomScene) {
 
   const now = performance.now();
   const lastSent = mySprite.getData('lastNetworkSent') as number;
-  const prevDirection = (mySprite.getData('direction') as string) || 'stop';
+  const prevDirection = (mySprite.getData('direction') as Direction) || 's';
 
   if (moved) {
     const directionChanged = direction !== prevDirection;
@@ -65,13 +66,13 @@ export function movementInputManager(scene: RoomScene) {
         direction,
       );
     }
-  } else if (prevDirection !== 'stop') {
-    mySprite.setData('direction', 'stop');
+  } else if (prevDirection !== 's') {
+    mySprite.setData('direction', 's');
     mySprite.setData('lastNetworkSent', now);
     scene.networkManager.sendMovement(
       Math.round(mySprite.x),
       Math.round(mySprite.y),
-      'stop',
+      's',
     );
   }
 }

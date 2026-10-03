@@ -1,6 +1,6 @@
 import type { BotCollisionGrid } from './collision.js';
 
-export type Direction = 'up' | 'down' | 'left' | 'right' | 'stop';
+export type Direction = 'u' | 'd' | 'l' | 'r' | 's';
 
 export interface BotState {
   x: number;
@@ -84,8 +84,8 @@ export function computeNextStep(
   // If the bot is currently resting in idle pose:
   if (state.pauseTicksRemaining > 0) {
     state.pauseTicksRemaining--;
-    state.direction = 'stop';
-    return { x: state.x, y: state.y, direction: 'stop' };
+    state.direction = 's';
+    return { x: state.x, y: state.y, direction: 's' };
   }
 
   const dx = state.targetX - state.x;
@@ -113,8 +113,8 @@ export function computeNextStep(
     // ~35% chance to stand idle for 10-25 ticks (~1.5s - 3.5s)
     if (Math.random() < 0.35) {
       state.pauseTicksRemaining = Math.floor(10 + Math.random() * 15);
-      state.direction = 'stop';
-      return { x: state.x, y: state.y, direction: 'stop' };
+      state.direction = 's';
+      return { x: state.x, y: state.y, direction: 's' };
     }
   }
 
@@ -123,29 +123,29 @@ export function computeNextStep(
 
   // Candidate move along X
   let candX = state.x;
-  let dirX: Direction = 'right';
+  let dirX: Direction = 'r';
   if (dx > 0) {
     candX = Math.min(maxX, state.x + Math.min(speed, dx));
-    dirX = 'right';
+    dirX = 'r';
   } else if (dx < 0) {
     candX = Math.max(minX, state.x - Math.min(speed, -dx));
-    dirX = 'left';
+    dirX = 'l';
   }
 
   // Candidate move along Y
   let candY = state.y;
-  let dirY: Direction = 'down';
+  let dirY: Direction = 'd';
   if (dy > 0) {
     candY = Math.min(maxY, state.y + Math.min(speed, dy));
-    dirY = 'down';
+    dirY = 'd';
   } else if (dy < 0) {
     candY = Math.max(minY, state.y - Math.min(speed, -dy));
-    dirY = 'up';
+    dirY = 'u';
   }
 
   let finalX = state.x;
   let finalY = state.y;
-  let finalDir: Direction = 'stop';
+  let finalDir: Direction = 's';
   let moved = false;
 
   if (preferX) {
@@ -209,6 +209,6 @@ export function computeNextStep(
     state.stuckTicks = 0;
   }
 
-  state.direction = 'stop';
-  return { x: state.x, y: state.y, direction: 'stop' };
+  state.direction = 's';
+  return { x: state.x, y: state.y, direction: 's' };
 }

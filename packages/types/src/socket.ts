@@ -1,26 +1,24 @@
 import type { Player } from './game';
 
-export interface MovementPayload {
-  x: number;
-  y: number;
-  direction: string;
-}
+export type Direction = 'u' | 'd' | 'l' | 'r' | 's';
 
-export interface PlayerMovedPayload {
-  id: string;
-  x: number;
-  y: number;
-  direction: string;
-}
+export type MovementPayload = [x: number, y: number, direction: Direction];
+
+export type PlayerMovedPayload = [
+  id: string,
+  x: number,
+  y: number,
+  direction: Direction,
+];
 
 export interface ServerToClientEvents {
   currentPlayers: (players: Player[]) => void;
   playerJoined: (player: Player) => void;
-  playerMoved: (data: PlayerMovedPayload) => void;
+  move: (data: PlayerMovedPayload) => void;
   playerLeft: (player: Player) => void;
   error: (message: string) => void;
 }
 
 export interface ClientToServerEvents {
-  movement: (data: MovementPayload) => void;
+  move: (data: MovementPayload) => void;
 }

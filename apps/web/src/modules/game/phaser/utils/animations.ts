@@ -1,6 +1,8 @@
 import type { RoomScene } from '../scenes/RoomScene';
 import type { Player } from '@repo/types';
 
+import type { Direction } from '@repo/types';
+
 const pendingAvatarLoads = new Map<string, Array<() => void>>();
 
 export function ensureAvatarAnimations(scene: Phaser.Scene, avatarKey: string) {
@@ -8,11 +10,11 @@ export function ensureAvatarAnimations(scene: Phaser.Scene, avatarKey: string) {
     return;
   }
 
-  const directions = [
-    { dir: 'down', start: 0, end: 2 },
-    { dir: 'left', start: 3, end: 5 },
-    { dir: 'right', start: 6, end: 8 },
-    { dir: 'up', start: 9, end: 11 },
+  const directions: Array<{ dir: Direction; start: number; end: number }> = [
+    { dir: 'd', start: 0, end: 2 },
+    { dir: 'l', start: 3, end: 5 },
+    { dir: 'r', start: 6, end: 8 },
+    { dir: 'u', start: 9, end: 11 },
   ];
 
   directions.forEach(({ dir, start, end }) => {
@@ -125,8 +127,8 @@ export function setupSocketListeners(scene: RoomScene, player: Player) {
     ensureAvatarLoaded(scene, avatarKey, () => {
       if (sprite.active) {
         sprite.setTexture(avatarKey, 1);
-        const currentDir = sprite.getData('direction') as string | undefined;
-        if (currentDir && currentDir !== 'stop') {
+        const currentDir = sprite.getData('direction') as Direction | undefined;
+        if (currentDir && currentDir !== 's') {
           const animKey = `${avatarKey}-walk-${currentDir}`;
           if (scene.anims.exists(animKey)) {
             sprite.anims.play(animKey, true);
@@ -142,7 +144,7 @@ export function handlePlayerMovement(
   id: string,
   newX: number,
   newY: number,
-  direction: string,
+  direction: Direction,
 ) {
   const sprite = scene.players.get(id);
   if (sprite) {
@@ -160,7 +162,7 @@ export function handlePlayerMovement(
     const avatarKey =
       (sprite.getData('avatarKey') as string) || sprite.texture.key;
 
-    if (direction && direction !== 'stop') {
+    if (direction && direction !== 's') {
       const animKey = `${avatarKey}-walk-${direction}`;
       if (scene.anims.exists(animKey)) {
         sprite.anims.play(animKey, true);

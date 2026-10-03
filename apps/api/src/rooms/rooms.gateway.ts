@@ -118,10 +118,10 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.to(code).emit('playerJoined', newPlayer);
   }
 
-  @SubscribeMessage('movement')
+  @SubscribeMessage('move')
   handleMovement(
     @ConnectedSocket() client: ClientSocket,
-    @MessageBody() data: MovementPayload,
+    @MessageBody() [x, y, direction]: MovementPayload,
   ) {
     const roomCode = client.data.roomCode || '';
     const roomState = this.rooms.get(roomCode);
@@ -129,32 +129,25 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (player && roomState) {
       const isWalkable = roomState.collisionGrid
-        ? roomState.collisionGrid.isWalkableWorld(data.x, data.y)
+        ? roomState.collisionGrid.isWalkableWorld(x, y)
         : true;
 
       if (isWalkable) {
-        player.x = data.x;
-        player.y = data.y;
+        player.x = x;
+        player.y = y;
 
-        client.broadcast.to(roomCode).emit('playerMoved', {
-          id: client.id,
-          x: player.x,
-          y: player.y,
-          direction: data.direction,
-        });
+        client.broadcast
+          .to(roomCode)
+          .emit('move', [client.id, player.x, player.y, direction]);
       } else {
-        client.emit('playerMoved', {
-          id: client.id,
-          x: player.x,
-          y: player.y,
-          direction: 'stop',
-        });
+        client.emit('move', [client.id, player.x, player.y, 's']);
       }
     }
   }
 
   handleDisconnect(client: ClientSocket) {
-    const code = client.data.roomCode || '';
+    const code = client.data.roomCode;
+    if (!code) return;
     const roomState = this.rooms.get(code);
     if (roomState) {
       const player = roomState.players.get(client.id);

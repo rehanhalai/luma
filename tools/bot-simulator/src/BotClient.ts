@@ -35,7 +35,7 @@ export class BotClient {
       y: 0,
       targetX: 0,
       targetY: 0,
-      direction: 'stop',
+      direction: 's',
       pauseTicksRemaining: 0,
       packetsSent: 0,
     };
@@ -92,11 +92,11 @@ export class BotClient {
 
       // Authoritative collision recovery: if server sends snapback, re-anchor bot & turn away
       this.socket.on(
-        'playerMoved',
-        (data: { id: string; x: number; y: number; direction: Direction }) => {
-          if (data.id === this.socket?.id && data.direction === 'stop') {
-            this.state.x = data.x;
-            this.state.y = data.y;
+        'move',
+        ([id, x, y, direction]: [string, number, number, Direction]) => {
+          if (id === this.socket?.id && direction === 's') {
+            this.state.x = x;
+            this.state.y = y;
             const wp = pickNewWaypoint(
               this.state.x,
               this.state.y,
@@ -119,7 +119,7 @@ export class BotClient {
   }
 
   private startMovementLoop() {
-    let prevDirection: Direction = 'stop';
+    let prevDirection: Direction = 's';
 
     this.intervalTimer = setInterval(() => {
       if (!this.socket?.connected) return;
@@ -135,8 +135,8 @@ export class BotClient {
       );
 
       // Emit movement when moving, or emit 'stop' once when halting
-      if (direction !== 'stop' || prevDirection !== 'stop') {
-        this.socket.emit('movement', { x, y, direction });
+      if (direction !== 's' || prevDirection !== 's') {
+        this.socket.emit('move', [x, y, direction]);
         this.state.packetsSent++;
         prevDirection = direction;
       }

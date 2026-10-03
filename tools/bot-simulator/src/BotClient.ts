@@ -43,7 +43,8 @@ export class BotClient {
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.socket = io(this.apiUrl, {
+      const socketUrl = `${this.apiUrl}/game`;
+      this.socket = io(socketUrl, {
         query: {
           code: this.roomCode,
           name: this.name,

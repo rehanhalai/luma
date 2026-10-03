@@ -92,6 +92,8 @@ export function useLobby() {
   }, [avatars, avatar]);
 
   const handleJoinRoom = (roomCode: string) => {
+    if (!selectedAvatarObj) return;
+
     const finalName = name.trim() || 'Guest';
     const avatarToUse = selectedAvatarObj.path;
     navigate(

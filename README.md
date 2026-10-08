@@ -1,14 +1,13 @@
-# Turborepo starter
+<p align="center">
+  <img src=".github/assets/social-preview.jpg" alt="Luma - Real-Time Spatial Hangout & Virtual World Engine" width="100%" />
+</p>
 
-This is a community-maintained example. If you experience a problem, please submit a pull request with a fix. GitHub Issues will be closed.
+# Luma
 
-## Using this example
+> **Real-Time Spatial Hangout & Virtual World Engine**  
+> A 2D multiplayer virtual space built with **Phaser 3**, **React**, **NestJS**, and **WebSockets**.
 
-Run the following command:
-
-```bash
-npx create-turbo@latest -e with-nestjs
-```
+---
 
 ## What's inside?
 

@@ -12,6 +12,7 @@
 - Make only the minimal changes needed to complete the task.
 - Follow DRY (Don't Repeat Yourself).
 - Always check if a utility function or method already exists before writing a new one.
+- Avoid lossly typed code, use proper types for TypeScript.
 
 ## Project Rules
 

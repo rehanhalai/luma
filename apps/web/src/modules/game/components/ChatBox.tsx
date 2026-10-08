@@ -24,6 +24,8 @@ export function ChatBox() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const chatBoxRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const handleIncomingMessage = (msg: ChatMessage) => {
@@ -32,9 +34,21 @@ export function ChatBox() {
 
     EventBus.on('chat-message-received', handleIncomingMessage);
 
+    const handleClickOutside = (e: PointerEvent | MouseEvent) => {
+      if (
+        chatBoxRef.current &&
+        !chatBoxRef.current.contains(e.target as Node)
+      ) {
+        inputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener('pointerdown', handleClickOutside);
+
     return () => {
       EventBus.off('chat-message-received', handleIncomingMessage);
       EventBus.emit('chat-focus-changed', false);
+      window.removeEventListener('pointerdown', handleClickOutside);
     };
   }, []);
 
@@ -74,7 +88,10 @@ export function ChatBox() {
   };
 
   return (
-    <div className="fixed bottom-3 left-3 z-40 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] flex flex-col bg-black/60 backdrop-blur-xs border border-white/10 rounded-xs overflow-hidden select-text font-heading text-xs shadow-2xl">
+    <div
+      ref={chatBoxRef}
+      className="fixed bottom-3 left-3 z-40 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] flex flex-col bg-black/60 backdrop-blur-xs border border-white/10 rounded-xs overflow-hidden select-text font-heading text-xs shadow-2xl"
+    >
       {/* Messages list */}
       <div className="h-44 sm:h-52 overflow-y-auto px-3 py-2 space-y-1 scrollbar-thin [scrollbar-color:rgba(255,255,255,0.2)_transparent]">
         {messages.length === 0 ? (
@@ -107,6 +124,7 @@ export function ChatBox() {
           |
         </span>
         <input
+          ref={inputRef}
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}

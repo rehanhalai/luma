@@ -167,7 +167,6 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       senderId: client.id,
       senderName: player.name,
       message: trimmed,
-      timestamp: Date.now(),
     };
 
     this.server.to(roomCode).emit('chatMessage', chatPayload);

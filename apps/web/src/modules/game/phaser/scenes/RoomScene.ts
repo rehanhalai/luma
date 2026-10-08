@@ -67,12 +67,14 @@ export class RoomScene extends Scene {
 
     const handleChatFocus = (isFocused: boolean) => {
       this.registry.set('isChatFocused', isFocused);
-      if (isFocused) {
-        this.input.keyboard.disableGlobalCapture();
-        this.input.keyboard.enabled = false;
-      } else {
-        this.input.keyboard.enableGlobalCapture();
-        this.input.keyboard.enabled = true;
+      if (this.input.keyboard) {
+        if (isFocused) {
+          this.input.keyboard.disableGlobalCapture();
+          this.input.keyboard.enabled = false;
+        } else {
+          this.input.keyboard.enableGlobalCapture();
+          this.input.keyboard.enabled = true;
+        }
       }
     };
     EventBus.on('chat-focus-changed', handleChatFocus);

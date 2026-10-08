@@ -150,9 +150,7 @@ async function main() {
         `🛡️  Collision Grid: \x1b[32m${collision.width}x${collision.height} tiles\x1b[0m (${collision.worldWidth}x${collision.worldHeight}px world)`,
       );
     } catch (err: any) {
-      console.warn(
-        `⚠️  Could not initialize collision grid: ${err.message}`,
-      );
+      console.warn(`⚠️  Could not initialize collision grid: ${err.message}`);
     }
   }
 

@@ -1,5 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +37,9 @@ export function AvatarSelectorCard({
     if (!search.trim()) return avatars;
     const q = search.toLowerCase();
     return avatars.filter(
-      (a) => a.name.toLowerCase().includes(q) || a.category.toLowerCase().includes(q),
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q),
     );
   }, [avatars, search]);
 
@@ -39,7 +47,9 @@ export function AvatarSelectorCard({
     <Card className="h-full flex flex-col shadow-sm border-border/80">
       <CardHeader className="pb-3 space-y-1.5">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold tracking-tight">Choose Avatar</CardTitle>
+          <CardTitle className="text-xl font-bold tracking-tight">
+            Choose Avatar
+          </CardTitle>
           <Badge variant="secondary" className="font-mono text-xs">
             {avatars.length} available
           </Badge>
@@ -99,7 +109,8 @@ export function AvatarSelectorCard({
         {!isLoading && filteredAvatars.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 max-h-115 overflow-y-auto scrollbar-none">
             {filteredAvatars.map((av) => {
-              const isSelected = selectedAvatar === av.name || selectedAvatar === av.key;
+              const isSelected =
+                selectedAvatar === av.name || selectedAvatar === av.key;
               return (
                 <button
                   key={av.id}
@@ -112,15 +123,13 @@ export function AvatarSelectorCard({
                   }`}
                 >
                   <div className="w-14 h-14 flex items-center justify-center overflow-hidden rounded-md bg-muted/30 mb-1.5 group-hover:scale-110 transition-transform">
-                    <CharacterSprite
-                      src={av.path}
-                      alt={av.name}
-                      size={44}
-                    />
+                    <CharacterSprite src={av.path} alt={av.name} size={44} />
                   </div>
                   <span
                     className={`text-[11px] font-medium leading-tight truncate w-full ${
-                      isSelected ? 'text-primary font-semibold' : 'text-foreground'
+                      isSelected
+                        ? 'text-primary font-semibold'
+                        : 'text-foreground'
                     }`}
                     title={av.name}
                   >

@@ -150,7 +150,10 @@ export function computeNextStep(
 
   if (preferX) {
     // Try primary X
-    if (candX !== state.x && (!collision || collision.isWalkable(candX, state.y))) {
+    if (
+      candX !== state.x &&
+      (!collision || collision.isWalkable(candX, state.y))
+    ) {
       finalX = candX;
       finalY = state.y;
       finalDir = dirX;
@@ -167,7 +170,10 @@ export function computeNextStep(
     }
   } else {
     // Try primary Y
-    if (candY !== state.y && (!collision || collision.isWalkable(state.x, candY))) {
+    if (
+      candY !== state.y &&
+      (!collision || collision.isWalkable(state.x, candY))
+    ) {
       finalX = state.x;
       finalY = candY;
       finalDir = dirY;

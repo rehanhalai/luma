@@ -1,4 +1,10 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CharacterSprite } from './CharacterSprite';
@@ -21,10 +27,18 @@ export function PlayerNameCard({
     <Card className="shadow-sm border-border/80">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold tracking-tight">Player Profile</CardTitle>
+          <CardTitle className="text-base font-semibold tracking-tight">
+            Player Profile
+          </CardTitle>
           {selectedAvatarObj ? (
-            <Badge variant="outline" className="text-[11px] gap-1 px-2 py-0.5 font-normal">
-              Avatar: <span className="font-semibold text-foreground">{selectedAvatarObj.name}</span>
+            <Badge
+              variant="outline"
+              className="text-[11px] gap-1 px-2 py-0.5 font-normal"
+            >
+              Avatar:{' '}
+              <span className="font-semibold text-foreground">
+                {selectedAvatarObj.name}
+              </span>
             </Badge>
           ) : (
             <Badge variant="outline" className="text-[11px] px-2 py-0.5">

@@ -39,9 +39,7 @@ export class CollisionGrid {
 
   constructor(rawMapData: unknown, scale = 3) {
     const mapData = (
-      typeof rawMapData === 'string'
-        ? JSON.parse(rawMapData)
-        : rawMapData || {}
+      typeof rawMapData === 'string' ? JSON.parse(rawMapData) : rawMapData || {}
     ) as TiledMapData;
 
     this.width = mapData.width || 80;

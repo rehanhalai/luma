@@ -3,9 +3,11 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents,
   Direction,
+  ChatMessage,
 } from '@repo/types/socket';
 import { RoomScene } from '../phaser/scenes/RoomScene';
 import type { RoomParams } from '../phaser/config';
+import { EventBus } from '../phaser/EventBus';
 import {
   handlePlayerMovement,
   setupSocketListeners,
@@ -30,6 +32,7 @@ export class NetworkManager {
       },
     });
     this.initListeners();
+    EventBus.on('send-chat-message', this.sendMessage);
   }
 
   private initListeners() {
@@ -55,10 +58,19 @@ export class NetworkManager {
       handlePlayerMovement(this.scene, id, x, y, direction);
     });
 
+    this.socket.on('chatMessage', (data: ChatMessage) => {
+      EventBus.emit('chat-message-received', data);
+    });
+
     this.scene.events.on('shutdown', () => {
+      EventBus.off('send-chat-message', this.sendMessage);
       this.socket.disconnect();
     });
   }
+
+  public sendMessage = (message: string) => {
+    this.socket.emit('sendMessage', message);
+  };
 
   public sendMovement(x: number, y: number, direction: Direction) {
     this.socket.emit('move', [x, y, direction]);

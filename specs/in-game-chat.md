@@ -54,7 +54,7 @@ export interface ChatMessage {
 
 ## 6. Verification Checklist
 
-- [ ] `pnpm --filter @repo/types build` passes cleanly.
-- [ ] `pnpm format` and `pnpm lint` pass with no errors.
+- [x] `pnpm --filter @repo/types build` passes cleanly.
+- [x] `pnpm format` and `pnpm lint` pass with no errors.
 - [ ] Connect two players to the same room: messages sent from Player A appear on Player B's screen in real time.
 - [ ] Typing WASD in chat does not move the player character.

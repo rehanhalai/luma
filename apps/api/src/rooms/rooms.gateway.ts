@@ -8,12 +8,14 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { randomUUID } from 'node:crypto';
 import { RoomsService } from './rooms.service';
 import type { Player, RoomStat } from '@repo/types/game';
 import type {
   ServerToClientEvents,
   ClientToServerEvents,
   MovementPayload,
+  ChatMessage,
 } from '@repo/types/socket';
 import { CollisionGrid } from './collision/collision-grid';
 
@@ -143,6 +145,32 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.emit('move', [client.id, player.x, player.y, 's']);
       }
     }
+  }
+
+  @SubscribeMessage('sendMessage')
+  handleSendMessage(
+    @ConnectedSocket() client: ClientSocket,
+    @MessageBody() message: string,
+  ) {
+    const roomCode = client.data.roomCode;
+    if (!roomCode || typeof message !== 'string') return;
+
+    const trimmed = message.trim();
+    if (!trimmed || trimmed.length > 200) return;
+
+    const roomState = this.rooms.get(roomCode);
+    const player = roomState?.players.get(client.id);
+    if (!player) return;
+
+    const chatPayload: ChatMessage = {
+      id: randomUUID(),
+      senderId: client.id,
+      senderName: player.name,
+      message: trimmed,
+      timestamp: Date.now(),
+    };
+
+    this.server.to(roomCode).emit('chatMessage', chatPayload);
   }
 
   handleDisconnect(client: ClientSocket) {

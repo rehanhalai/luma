@@ -7,6 +7,23 @@ export function movementInputManager(scene: RoomScene) {
   const mySprite = scene.players.get(scene.networkManager.socket.id!);
   if (!mySprite || !scene.cursors || !scene.keys) return;
 
+  if (scene.registry.get('isChatFocused')) {
+    mySprite.setVelocity(0);
+    mySprite.anims.stop();
+    mySprite.setFrame(1);
+    const prevDirection = (mySprite.getData('direction') as Direction) || 's';
+    if (prevDirection !== 's') {
+      mySprite.setData('direction', 's');
+      mySprite.setData('lastNetworkSent', performance.now());
+      scene.networkManager.sendMovement(
+        Math.round(mySprite.x),
+        Math.round(mySprite.y),
+        's',
+      );
+    }
+    return;
+  }
+
   let moved = false;
   let direction: Direction = 's';
   const speed = 200;

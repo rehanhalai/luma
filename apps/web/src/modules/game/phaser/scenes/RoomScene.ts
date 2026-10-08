@@ -59,11 +59,26 @@ export class RoomScene extends Scene {
 
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();
-      this.keys = this.input.keyboard.addKeys('w,s,a,d') as Record<
+      this.keys = this.input.keyboard.addKeys('w,s,a,d', false) as Record<
         string,
         Phaser.Input.Keyboard.Key
       >;
     }
+
+    const handleChatFocus = (isFocused: boolean) => {
+      this.registry.set('isChatFocused', isFocused);
+      if (isFocused) {
+        this.input.keyboard.disableGlobalCapture();
+        this.input.keyboard.enabled = false;
+      } else {
+        this.input.keyboard.enableGlobalCapture();
+        this.input.keyboard.enabled = true;
+      }
+    };
+    EventBus.on('chat-focus-changed', handleChatFocus);
+    this.events.on('shutdown', () => {
+      EventBus.off('chat-focus-changed', handleChatFocus);
+    });
 
     EventBus.emit('current-scene-ready', this);
   }

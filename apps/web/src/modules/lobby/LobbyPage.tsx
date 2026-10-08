@@ -44,15 +44,14 @@ export function LobbyPage() {
             />
           </div>
 
-          
-          <div className="lg:col-span-1 flex flex-col gap-5"> 
+          <div className="lg:col-span-1 flex flex-col gap-5">
             <PlayerNameCard
               name={name}
               onNameChange={setName}
               selectedAvatar={avatar}
               selectedAvatarObj={selectedAvatarObj}
             />
- 
+
             <RoomList
               rooms={rooms}
               isLoading={isLoading}

@@ -3,6 +3,7 @@ import { EventBus } from '../EventBus';
 import { initAnimations } from '../utils/animations';
 import { NetworkManager } from '../../networks/NetworkManager';
 import { movementInputManager } from '../utils/input';
+import { MinimapManager } from '../utils/minimap';
 import type { RoomParams } from '../config';
 
 export class RoomScene extends Scene {
@@ -16,6 +17,7 @@ export class RoomScene extends Scene {
   public cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   public keys!: Record<'w' | 's' | 'a' | 'd', Phaser.Input.Keyboard.Key>;
   public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
+  public minimapManager?: MinimapManager;
 
   init() {
     this.roomParams = this.registry.get('roomParams') as RoomParams;
@@ -56,6 +58,7 @@ export class RoomScene extends Scene {
       });
     }
     this.networkManager = new NetworkManager(this, this.roomParams);
+    this.minimapManager = new MinimapManager(this, map);
 
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();
@@ -91,5 +94,6 @@ export class RoomScene extends Scene {
 
   update() {
     movementInputManager(this);
+    this.minimapManager?.update();
   }
 }

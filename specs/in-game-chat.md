@@ -10,7 +10,7 @@ Real-time text chat enabling players in the same room to communicate. Messages a
 - **Message Constraints**: Max 200 characters per message. Trim whitespace; reject empty messages.
 - **Input Focus & Movement**: While the chat input is focused, Phaser keyboard controls (WASD, arrows) must be paused so the player does not move while typing.
 - **Sending Messages**: Pressing `Enter` or clicking "Send" emits the message and clears the input. Pressing `Escape` or clicking outside blurs the input and restores player movement.
-- **Message Feed**: Displays recent messages with sender name and message body. Automatically scrolls to the newest message.
+- **Message Feed**: Displays recent messages with sender name and message body. Also displays system notices when players join or leave the room. Automatically scrolls to the newest message.
 
 ## 3. Out of Scope (Non-Goals)
 

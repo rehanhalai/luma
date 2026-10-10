@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ChatMessage } from '@repo/types/socket';
+import type { Player } from '@repo/types/game';
 import { EventBus } from '../phaser/EventBus';
+
+interface DisplayMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  isSystem?: boolean;
+  systemType?: 'join' | 'leave';
+}
 
 const PLAYER_COLORS = [
   'text-emerald-400',
@@ -21,7 +31,7 @@ function getPlayerColor(name: string): string {
 }
 
 export function ChatBox() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
@@ -33,7 +43,37 @@ export function ChatBox() {
       setMessages((prev) => [...prev.slice(-49), msg]);
     };
 
+    const handlePlayerJoined = (player: Player) => {
+      setMessages((prev) => [
+        ...prev.slice(-49),
+        {
+          id: `join-${player.id}-${Date.now()}-${Math.random()}`,
+          senderId: player.id,
+          senderName: player.name || 'Player',
+          message: 'joined the room',
+          isSystem: true,
+          systemType: 'join',
+        },
+      ]);
+    };
+
+    const handlePlayerLeft = (player: Player) => {
+      setMessages((prev) => [
+        ...prev.slice(-49),
+        {
+          id: `leave-${player.id}-${Date.now()}-${Math.random()}`,
+          senderId: player.id,
+          senderName: player.name || 'Player',
+          message: 'left the room',
+          isSystem: true,
+          systemType: 'leave',
+        },
+      ]);
+    };
+
     EventBus.on('chat-message-received', handleIncomingMessage);
+    EventBus.on('player-joined', handlePlayerJoined);
+    EventBus.on('player-left', handlePlayerLeft);
 
     const handleClickOutside = (e: PointerEvent | MouseEvent) => {
       if (
@@ -48,6 +88,8 @@ export function ChatBox() {
 
     return () => {
       EventBus.off('chat-message-received', handleIncomingMessage);
+      EventBus.off('player-joined', handlePlayerJoined);
+      EventBus.off('player-left', handlePlayerLeft);
       if (document.activeElement === inputEl) {
         EventBus.emit('chat-focus-changed', false);
       }
@@ -102,18 +144,40 @@ export function ChatBox() {
             No messages yet. Say hello!
           </p>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className="leading-snug wrap-break-word drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]"
-            >
-              <span className={`font-bold ${getPlayerColor(msg.senderName)}`}>
-                {msg.senderName}
-              </span>
-              <span className="text-white/70 mx-1">:</span>
-              <span className="text-white font-semibold">{msg.message}</span>
-            </div>
-          ))
+          messages.map((msg) =>
+            msg.isSystem ? (
+              <div
+                key={msg.id}
+                className="leading-snug wrap-break-word drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)] text-[11px] py-0.5"
+              >
+                <span
+                  className={`font-semibold ${getPlayerColor(msg.senderName)}`}
+                >
+                  {msg.senderName}
+                </span>{' '}
+                <span
+                  className={
+                    msg.systemType === 'join'
+                      ? 'text-emerald-400/90'
+                      : 'text-rose-400/80'
+                  }
+                >
+                  {msg.message}
+                </span>
+              </div>
+            ) : (
+              <div
+                key={msg.id}
+                className="leading-snug wrap-break-word drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]"
+              >
+                <span className={`font-bold ${getPlayerColor(msg.senderName)}`}>
+                  {msg.senderName}
+                </span>
+                <span className="text-white/70 mx-1">:</span>
+                <span className="text-white font-semibold">{msg.message}</span>
+              </div>
+            ),
+          )
         )}
         <div ref={messagesEndRef} />
       </div>

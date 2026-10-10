@@ -44,6 +44,7 @@ export class NetworkManager {
 
     this.socket.on('playerJoined', (data) => {
       setupSocketListeners(this.scene, data);
+      EventBus.emit('player-joined', data);
     });
 
     this.socket.on('playerLeft', (data) => {
@@ -52,6 +53,7 @@ export class NetworkManager {
         rect.destroy();
         this.scene.players.delete(data.id);
       }
+      EventBus.emit('player-left', data);
     });
 
     this.socket.on('move', ([id, x, y, direction]) => {

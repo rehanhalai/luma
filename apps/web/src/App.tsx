@@ -19,7 +19,6 @@ function App() {
         <Routes>
           <Route path="/" element={<LobbyPage />} />
           <Route path="/room" element={<GamePage />} />
-          <Route path="/room/:id" element={<GamePage />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

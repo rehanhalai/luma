@@ -66,19 +66,23 @@ export class RoomScene extends Scene {
     }
 
     const handleChatFocus = (isFocused: boolean) => {
+      if (!this.sys?.isActive() || !this.input?.keyboard?.manager) {
+        return;
+      }
       this.registry.set('isChatFocused', isFocused);
-      if (this.input.keyboard) {
-        if (isFocused) {
-          this.input.keyboard.disableGlobalCapture();
-          this.input.keyboard.enabled = false;
-        } else {
-          this.input.keyboard.enableGlobalCapture();
-          this.input.keyboard.enabled = true;
-        }
+      if (isFocused) {
+        this.input.keyboard.disableGlobalCapture();
+        this.input.keyboard.enabled = false;
+      } else {
+        this.input.keyboard.enableGlobalCapture();
+        this.input.keyboard.enabled = true;
       }
     };
     EventBus.on('chat-focus-changed', handleChatFocus);
-    this.events.on('shutdown', () => {
+    this.events.once('shutdown', () => {
+      EventBus.off('chat-focus-changed', handleChatFocus);
+    });
+    this.events.once('destroy', () => {
       EventBus.off('chat-focus-changed', handleChatFocus);
     });
 

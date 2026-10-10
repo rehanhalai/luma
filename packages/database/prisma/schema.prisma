@@ -32,6 +32,7 @@ model Room {
   code        String   @unique // e.g. "town-1" or "lobby" (used in URL: ?room=lobby)
   description String? 
   maxCapacity Int      @default(50)
+  isPrivate   Boolean  @default(true)
   
   // Relation to Map
   mapId       Int

@@ -71,20 +71,23 @@ async function main() {
       description: 'Main public gathering square',
       mapId: map.id,
       maxCapacity: 50,
+      isPrivate: false,
     },
     {
       code: 'tavern',
       name: 'The Tavern',
       description: 'Cozy social hangout spot',
       mapId: map.id,
-      maxCapacity: 30,
+      maxCapacity: 50,
+      isPrivate: false,
     },
     {
       code: 'park',
       name: 'Central Park',
       description: 'Relaxing outdoor green space',
       mapId: map.id,
-      maxCapacity: 40,
+      maxCapacity: 50,
+      isPrivate: false,
     },
   ];
 
@@ -109,34 +112,41 @@ async function main() {
     category: string;
   }> = [];
 
-  const rootEntries = fs.readdirSync(spritesDir, { withFileTypes: true });
-  for (const entry of rootEntries) {
-    if (entry.isFile() && entry.name.endsWith('.webp')) {
-      const baseName = path.parse(entry.name).name;
-      avatarData.push({
-        name: baseName,
-        key: baseName.toLowerCase(),
-        path: `/assets/sprites/${entry.name}`,
-        category: 'Default',
-      });
-    } else if (entry.isDirectory()) {
-      const category = entry.name;
-      const categoryDir = path.join(spritesDir, category);
-      const spriteFiles = fs.readdirSync(categoryDir);
+  function scanSprites(dir: string, currentCategory: string) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isFile() && entry.name.endsWith('.webp')) {
+        const baseName = path.parse(entry.name).name;
+        const relativePath = path
+          .relative(
+            path.resolve(__dirname, '../../../apps/web/public'),
+            fullPath,
+          )
+          .replace(/\\/g, '/');
 
-      for (const file of spriteFiles) {
-        if (file.endsWith('.webp')) {
-          const baseName = path.parse(file).name;
-          avatarData.push({
-            name: baseName,
-            key: `${category.toLowerCase()}-${baseName.toLowerCase()}`,
-            path: `/assets/sprites/${category}/${file}`,
-            category: category,
-          });
+        const cleanKey = `${currentCategory.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${baseName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+
+        avatarData.push({
+          name: baseName,
+          key: cleanKey,
+          path: `/${relativePath}`,
+          category: currentCategory,
+        });
+      } else if (entry.isDirectory()) {
+        let nextCategory = currentCategory;
+        if (currentCategory === 'Default') {
+          nextCategory =
+            entry.name === 'Japanese-school-characters'
+              ? 'Japanese School'
+              : entry.name;
         }
+        scanSprites(fullPath, nextCategory);
       }
     }
   }
+
+  scanSprites(spritesDir, 'Default');
 
   console.log(
     `🎭 Found ${avatarData.length} avatars across categories. Seeding to database...`,

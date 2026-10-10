@@ -1,6 +1,6 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
-import type { Room } from '@repo/types';
+import type { CreateRoomDto, Room } from '@repo/types';
 
 @Controller('rooms')
 export class RoomsController {
@@ -9,6 +9,11 @@ export class RoomsController {
   @Get()
   findAll(): Promise<Room[]> {
     return this.roomsService.findAll();
+  }
+
+  @Post()
+  createPrivateRoom(@Body() dto: CreateRoomDto): Promise<Room> {
+    return this.roomsService.createPrivateRoom(dto);
   }
 
   @Get(':code')

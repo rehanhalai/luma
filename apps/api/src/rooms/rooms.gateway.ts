@@ -8,17 +8,20 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { randomUUID } from 'node:crypto';
 import { RoomsService } from './rooms.service';
 import type { Player, RoomStat } from '@repo/types/game';
 import type {
   ServerToClientEvents,
   ClientToServerEvents,
   MovementPayload,
+  ChatMessage,
 } from '@repo/types/socket';
 import { CollisionGrid } from './collision/collision-grid';
 
 interface ClientSocketData {
   roomCode: string;
+  lastChatTime?: number;
 }
 
 type ClientSocket = Socket<
@@ -118,10 +121,10 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.to(code).emit('playerJoined', newPlayer);
   }
 
-  @SubscribeMessage('movement')
+  @SubscribeMessage('move')
   handleMovement(
     @ConnectedSocket() client: ClientSocket,
-    @MessageBody() data: MovementPayload,
+    @MessageBody() [x, y, direction]: MovementPayload,
   ) {
     const roomCode = client.data.roomCode || '';
     const roomState = this.rooms.get(roomCode);
@@ -129,32 +132,58 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (player && roomState) {
       const isWalkable = roomState.collisionGrid
-        ? roomState.collisionGrid.isWalkableWorld(data.x, data.y)
+        ? roomState.collisionGrid.isWalkableWorld(x, y)
         : true;
 
       if (isWalkable) {
-        player.x = data.x;
-        player.y = data.y;
+        player.x = x;
+        player.y = y;
 
-        client.broadcast.to(roomCode).emit('playerMoved', {
-          id: client.id,
-          x: player.x,
-          y: player.y,
-          direction: data.direction,
-        });
+        client.broadcast
+          .to(roomCode)
+          .emit('move', [client.id, player.x, player.y, direction]);
       } else {
-        client.emit('playerMoved', {
-          id: client.id,
-          x: player.x,
-          y: player.y,
-          direction: 'stop',
-        });
+        client.emit('move', [client.id, player.x, player.y, 's']);
       }
     }
   }
 
+  @SubscribeMessage('sendMessage')
+  handleSendMessage(
+    @ConnectedSocket() client: ClientSocket,
+    @MessageBody() message: string,
+  ) {
+    if (
+      client.data.lastChatTime &&
+      Date.now() - client.data.lastChatTime < 2000
+    ) {
+      return;
+    }
+
+    const roomCode = client.data.roomCode;
+    if (!roomCode || typeof message !== 'string') return;
+
+    const trimmed = message.trim();
+    if (!trimmed || trimmed.length > 200) return;
+    client.data.lastChatTime = Date.now();
+
+    const roomState = this.rooms.get(roomCode);
+    const player = roomState?.players.get(client.id);
+    if (!player) return;
+
+    const chatPayload: ChatMessage = {
+      id: randomUUID(),
+      senderId: client.id,
+      senderName: player.name,
+      message: trimmed,
+    };
+
+    this.server.to(roomCode).emit('chatMessage', chatPayload);
+  }
+
   handleDisconnect(client: ClientSocket) {
-    const code = client.data.roomCode || '';
+    const code = client.data.roomCode;
+    if (!code) return;
     const roomState = this.rooms.get(code);
     if (roomState) {
       const player = roomState.players.get(client.id);

@@ -17,13 +17,22 @@ interface RoomListProps {
   onJoinRoom: (roomCode: string) => void;
 }
 
-export function RoomList({ rooms, isLoading, error, onJoinRoom }: RoomListProps) {
+export function RoomList({
+  rooms,
+  isLoading,
+  error,
+  onJoinRoom,
+}: RoomListProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold tracking-tight">Available Rooms</h2>
-          <p className="text-xs text-muted-foreground">Select a world to enter</p>
+          <h2 className="text-base font-semibold tracking-tight">
+            Available Rooms
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Select a world to enter
+          </p>
         </div>
         <Badge variant="secondary" className="font-mono text-xs">
           {rooms.length} active
@@ -61,7 +70,9 @@ export function RoomList({ rooms, isLoading, error, onJoinRoom }: RoomListProps)
           >
             <CardHeader className="p-3.5 pb-2.5">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold">{room.name}</CardTitle>
+                <CardTitle className="text-sm font-semibold">
+                  {room.name}
+                </CardTitle>
                 <Badge variant="outline" className="font-mono text-[10px]">
                   {room.code}
                 </Badge>

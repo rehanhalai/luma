@@ -2,9 +2,12 @@ import { io, Socket } from 'socket.io-client';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
+  Direction,
+  ChatMessage,
 } from '@repo/types/socket';
 import { RoomScene } from '../phaser/scenes/RoomScene';
 import type { RoomParams } from '../phaser/config';
+import { EventBus } from '../phaser/EventBus';
 import {
   handlePlayerMovement,
   setupSocketListeners,
@@ -29,6 +32,7 @@ export class NetworkManager {
       },
     });
     this.initListeners();
+    EventBus.on('send-chat-message', this.sendMessage);
   }
 
   private initListeners() {
@@ -50,20 +54,25 @@ export class NetworkManager {
       }
     });
 
-    this.socket.on('playerMoved', (data) => {
-      handlePlayerMovement(this.scene, data.id, data.x, data.y, data.direction);
+    this.socket.on('move', ([id, x, y, direction]) => {
+      handlePlayerMovement(this.scene, id, x, y, direction);
+    });
+
+    this.socket.on('chatMessage', (data: ChatMessage) => {
+      EventBus.emit('chat-message-received', data);
     });
 
     this.scene.events.on('shutdown', () => {
+      EventBus.off('send-chat-message', this.sendMessage);
       this.socket.disconnect();
     });
   }
 
-  public sendMovement(x: number, y: number, direction: string) {
-    this.socket.emit('movement', {
-      x,
-      y,
-      direction,
-    });
+  public sendMessage = (message: string) => {
+    this.socket.emit('sendMessage', message);
+  };
+
+  public sendMovement(x: number, y: number, direction: Direction) {
+    this.socket.emit('move', [x, y, direction]);
   }
 }

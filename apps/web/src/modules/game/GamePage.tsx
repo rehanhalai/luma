@@ -1,8 +1,9 @@
-import StartGame from "@/modules/game/phaser/config";
-import { useRef, useLayoutEffect, forwardRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { useRoom } from "./hooks/useRoom";
+import StartGame from '@/modules/game/phaser/config';
+import { useRef, useLayoutEffect, forwardRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useRoom } from './hooks/useRoom';
+import { ChatBox } from './components/ChatBox';
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -18,9 +19,14 @@ export const GamePage = forwardRef<IRefPhaserGame>(
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     useLayoutEffect(() => {
-      if (!isLoading && roomParams && containerRef.current && gameRef.current == null) {
+      if (
+        !isLoading &&
+        roomParams &&
+        containerRef.current &&
+        gameRef.current == null
+      ) {
         gameRef.current = StartGame(containerRef.current, roomParams);
-        if (typeof ref === "function") {
+        if (typeof ref === 'function') {
           ref({
             game: gameRef.current,
             scene: null,
@@ -51,15 +57,20 @@ export const GamePage = forwardRef<IRefPhaserGame>(
       return (
         <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center space-y-4 p-4 text-center">
           <p className="text-destructive font-medium text-sm">
-            {error || "Room not found"}
+            {error || 'Room not found'}
           </p>
-          <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
             Back to Lobby
           </Button>
         </div>
       );
     }
 
-    return <div ref={containerRef} className="w-screen h-screen" />;
-  }
+    return (
+      <div className="relative w-screen h-screen overflow-hidden">
+        <div ref={containerRef} className="w-full h-full" />
+        <ChatBox />
+      </div>
+    );
+  },
 );

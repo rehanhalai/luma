@@ -3,6 +3,7 @@ import { EventBus } from '../EventBus';
 import { initAnimations } from '../utils/animations';
 import { NetworkManager } from '../../networks/NetworkManager';
 import { movementInputManager } from '../utils/input';
+import { MinimapManager } from '../utils/minimap';
 import type { RoomParams } from '../config';
 
 export class RoomScene extends Scene {
@@ -16,6 +17,7 @@ export class RoomScene extends Scene {
   public cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   public keys!: Record<'w' | 's' | 'a' | 'd', Phaser.Input.Keyboard.Key>;
   public mapLayers: Phaser.Tilemaps.TilemapLayer[] = [];
+  public minimapManager?: MinimapManager;
 
   init() {
     this.roomParams = this.registry.get('roomParams') as RoomParams;
@@ -86,10 +88,19 @@ export class RoomScene extends Scene {
       EventBus.off('chat-focus-changed', handleChatFocus);
     });
 
+    this.minimapManager = new MinimapManager(this);
+    this.events.once('shutdown', () => {
+      this.minimapManager?.destroy();
+    });
+    this.events.once('destroy', () => {
+      this.minimapManager?.destroy();
+    });
+
     EventBus.emit('current-scene-ready', this);
   }
 
   update() {
     movementInputManager(this);
+    this.minimapManager?.update();
   }
 }

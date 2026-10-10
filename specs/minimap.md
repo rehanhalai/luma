@@ -11,22 +11,26 @@ The radar is rendered via Phaser Vector Graphics (`this.add.graphics`), ensuring
 ## 2. Requirements & Behavior
 
 ### A. Position & Geometry
+
 - **Placement**: Docked in the bottom-right corner of the viewport (offset by ~24px padding), responsive to window resizing.
 - **Shape & Size**: Circular radar with radius $R = 64\text{px}$ (diameter $128\text{px}$).
 - **Scroll Factor**: `setScrollFactor(0)` so it remains fixed to screen coordinates as the camera moves.
 - **Visual Depth**: High depth (`setDepth(100)`) so it stays above map layers and game sprites, but below modal dialogs.
 
 ### B. Visual Styling (Tactical HUD)
-- **Background**: Translucent dark circle (`#0b0f19` or `0x0f172a`, alpha `0.85`).
-- **Outer Rim**: Crisp border ring (`0x38bdf8` or `0x475569`, 2px thickness, alpha `0.8`).
-- **Range Rings**: Subtle inner concentric circle at $R/2$ (alpha `0.2`) and faint cardinal crosshair axes.
+
+- **Background**: Translucent pitch black circle (`0x000000`, alpha `0.65`, matching `ChatBox` `bg-black/60`).
+- **Outer Rim**: Dark black border ring (`0x000000`, 2px thickness, alpha `0.9`) with subtle inner white highlight (`0xffffff`, alpha `0.12`, matching `ChatBox` `border-white/10`).
+- **Range Rings**: Subtle inner concentric circle at $R/2$ (`0xffffff`, alpha `0.12`) and faint cardinal crosshair axes (`0xffffff`, alpha `0.08`).
 
 ### C. Local Player Representation
+
 - **Position**: Always pinned at the exact center of the radar circle `(centerX, centerY)`.
 - **Marker**: Distinctive cyan/emerald dot (radius 4px).
 - **Direction Pointer**: Directional tick or arrow pointing toward the player's active facing direction (`u`, `d`, `l`, `r`).
 
 ### D. Other Players Representation
+
 - **World Range**: Radar covers a world radius of $W_{\text{range}} = 800\text{px}$ around the local player.
 - **Relative Distance**: For each other player:
   $$\Delta x = x_{\text{other}} - x_{\text{local}}, \quad \Delta y = y_{\text{other}} - y_{\text{local}}$$
@@ -43,10 +47,12 @@ The radar is rendered via Phaser Vector Graphics (`this.add.graphics`), ensuring
   - Rendered as a smaller edge indicator dot (radius 2px, alpha `0.7`).
 
 ### E. Dynamic Map Portability
+
 - The radar strictly operates on relative coordinate offsets $(\Delta x, \Delta y)$ and the local player's position.
 - No hardcoded map dimensions or tileset dependencies: automatically works on any map loaded now or in the future.
 
 ### F. Performance & Lifecycle
+
 - Re-draws each frame in `scene.update()` via `MinimapManager.update()`.
 - Automatically destroyed when `RoomScene` shuts down or is destroyed.
 
@@ -91,8 +97,8 @@ MinimapManager.update()
 
 ## 6. Verification Checklist
 
-- [ ] `pnpm build` passes with 0 TypeScript errors.
-- [ ] `pnpm format` and `pnpm lint` pass cleanly.
+- [x] `pnpm build` passes with 0 TypeScript errors.
+- [x] `pnpm format` and `pnpm lint` pass cleanly.
 - [ ] Minimap appears in bottom-right corner when entering any room.
 - [ ] Center dot follows local player and updates directional indicator with WASD movement.
 - [ ] Moving toward another player shows their dot moving closer to the center of the radar.

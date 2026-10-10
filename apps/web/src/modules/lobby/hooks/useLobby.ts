@@ -1,88 +1,53 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getRooms, getAvatars, getAvatarCategories } from '../api/lobby.api';
-import type { Room, Avatar } from '@repo/types';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import {
+  getRooms,
+  getAvatars,
+  getAvatarCategories,
+  createPrivateRoom,
+} from '../api/lobby.api';
 
 export function useLobby() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('Female-01-1');
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [avatars, setAvatars] = useState<Avatar[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
-  const [isAvatarsLoading, setIsAvatarsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [code, setCode] = useState('');
 
+  // 1. Rooms Query
+  const {
+    data: rooms = [],
+    isLoading: isLoadingRooms,
+    error: roomsError,
+  } = useQuery({
+    queryKey: ['rooms'],
+    queryFn: getRooms,
+  });
+
+  // 2. Avatar Categories Query
+  const { data: rawCategories = [] } = useQuery({
+    queryKey: ['avatarCategories'],
+    queryFn: getAvatarCategories,
+  });
+
+  const categories = useMemo(() => {
+    return rawCategories.length > 0 ? ['All', ...rawCategories] : ['All'];
+  }, [rawCategories]);
+
+  // 3. Avatars Query
+  const { data: avatars = [], isLoading: isAvatarsLoading } = useQuery({
+    queryKey: ['avatars', selectedCategory],
+    queryFn: () =>
+      getAvatars(selectedCategory === 'All' ? undefined : selectedCategory),
+  });
+
+  // Keep first avatar selected if none active
   useEffect(() => {
-    let isMounted = true;
-
-    async function fetchRooms() {
-      try {
-        setIsLoadingRooms(true);
-        const data = await getRooms();
-        if (isMounted) setRooms(data);
-      } catch (err: unknown) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load rooms');
-        }
-      } finally {
-        if (isMounted) setIsLoadingRooms(false);
-      }
+    if (!avatar && avatars.length > 0) {
+      setAvatar(avatars[0].name);
     }
-
-    void fetchRooms();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchCategories() {
-      try {
-        const categoriesList = await getAvatarCategories();
-        if (isMounted && categoriesList.length > 0) {
-          setCategories(['All', ...categoriesList]);
-        }
-      } catch (e) {
-        console.error('Failed to load avatar categories', e);
-      }
-    }
-    void fetchCategories();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchAvatarsList() {
-      try {
-        setIsAvatarsLoading(true);
-        const data = await getAvatars(
-          selectedCategory === 'All' ? undefined : selectedCategory,
-        );
-        if (isMounted) {
-          setAvatars(data);
-          if (data.length > 0) {
-            setAvatar((current) => current || data[0].name);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load avatars', err);
-      } finally {
-        if (isMounted) setIsAvatarsLoading(false);
-      }
-    }
-
-    void fetchAvatarsList();
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedCategory]);
+  }, [avatar, avatars]);
 
   const selectedAvatarObj = useMemo(() => {
     return (
@@ -94,11 +59,32 @@ export function useLobby() {
   const handleJoinRoom = (roomCode: string) => {
     if (!selectedAvatarObj) return;
 
+    const trimmedCode = roomCode.trim();
+    if (!trimmedCode) return;
+
     const finalName = name.trim() || 'Guest';
     const avatarToUse = selectedAvatarObj.path;
     navigate(
-      `/room?code=${encodeURIComponent(roomCode)}&name=${encodeURIComponent(finalName)}&avatar=${encodeURIComponent(avatarToUse)}`,
+      `/room?code=${encodeURIComponent(trimmedCode)}&name=${encodeURIComponent(finalName)}&avatar=${encodeURIComponent(avatarToUse)}`,
     );
+  };
+
+  // 4. Create Private Room Mutation
+  const createRoomMutation = useMutation({
+    mutationFn: () => createPrivateRoom(),
+    onSuccess: (room) => {
+      handleJoinRoom(room.code);
+    },
+  });
+
+  const handleCreatePrivateRoom = () => {
+    createRoomMutation.mutate();
+  };
+
+  const handleJoinByCode = () => {
+    if (code.trim()) {
+      handleJoinRoom(code.trim());
+    }
   };
 
   return {
@@ -114,7 +100,16 @@ export function useLobby() {
     rooms,
     isLoading: isLoadingRooms,
     isAvatarsLoading,
-    error,
+    error: roomsError instanceof Error ? roomsError.message : null,
+    code,
+    setCode,
     handleJoinRoom,
+    handleJoinByCode,
+    handleCreatePrivateRoom,
+    isCreatingRoom: createRoomMutation.isPending,
+    createRoomError:
+      createRoomMutation.error instanceof Error
+        ? createRoomMutation.error.message
+        : null,
   };
 }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useRoom } from './hooks/useRoom';
 import { ChatBox } from './components/ChatBox';
+import { RoomHeaderHUD } from './components/RoomHeaderHUD';
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -69,6 +70,10 @@ export const GamePage = forwardRef<IRefPhaserGame>(
     return (
       <div className="relative w-screen h-screen overflow-hidden">
         <div ref={containerRef} className="w-full h-full" />
+        <RoomHeaderHUD
+          roomCode={roomParams.roomCode}
+          onLeave={() => navigate('/')}
+        />
         <ChatBox />
       </div>
     );

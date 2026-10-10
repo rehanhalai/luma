@@ -28,6 +28,7 @@ export function ChatBox() {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
+    const inputEl = inputRef.current;
     const handleIncomingMessage = (msg: ChatMessage) => {
       setMessages((prev) => [...prev.slice(-49), msg]);
     };
@@ -47,7 +48,9 @@ export function ChatBox() {
 
     return () => {
       EventBus.off('chat-message-received', handleIncomingMessage);
-      EventBus.emit('chat-focus-changed', false);
+      if (document.activeElement === inputEl) {
+        EventBus.emit('chat-focus-changed', false);
+      }
       window.removeEventListener('pointerdown', handleClickOutside);
     };
   }, []);

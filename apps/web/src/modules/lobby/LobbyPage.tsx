@@ -2,6 +2,7 @@ import { useLobby } from './hooks/useLobby';
 import { AvatarSelectorCard } from './components/AvatarSelectorCard';
 import { PlayerNameCard } from './components/PlayerNameCard';
 import { RoomList } from './components/RoomList';
+import { PrivateRoomCard } from './components/PrivateRoomCard';
 
 export function LobbyPage() {
   const {
@@ -18,7 +19,13 @@ export function LobbyPage() {
     isLoading,
     isAvatarsLoading,
     error,
+    code,
+    setCode,
     handleJoinRoom,
+    handleJoinByCode,
+    handleCreatePrivateRoom,
+    isCreatingRoom,
+    createRoomError,
   } = useLobby();
 
   return (
@@ -50,6 +57,15 @@ export function LobbyPage() {
               onNameChange={setName}
               selectedAvatar={avatar}
               selectedAvatarObj={selectedAvatarObj}
+            />
+
+            <PrivateRoomCard
+              code={code}
+              onCodeChange={setCode}
+              onCreatePrivateRoom={handleCreatePrivateRoom}
+              onJoinByCode={handleJoinByCode}
+              isCreating={isCreatingRoom}
+              error={createRoomError}
             />
 
             <RoomList

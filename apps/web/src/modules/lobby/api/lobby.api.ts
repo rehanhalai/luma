@@ -1,4 +1,4 @@
-import type { Room, Avatar } from '@repo/types';
+import type { Room, Avatar, CreateRoomDto } from '@repo/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -6,6 +6,20 @@ export async function getRooms(): Promise<Room[]> {
   const res = await fetch(`${API_BASE_URL}/rooms`);
   if (!res.ok) {
     throw new Error(`Failed to fetch rooms: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function createPrivateRoom(dto?: CreateRoomDto): Promise<Room> {
+  const res = await fetch(`${API_BASE_URL}/rooms`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dto || {}),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to create private room: ${res.statusText}`);
   }
   return res.json();
 }

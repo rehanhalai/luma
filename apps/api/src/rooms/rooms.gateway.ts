@@ -42,6 +42,7 @@ interface ServerRoomStat extends RoomStat {
   collisionGrid: CollisionGrid;
   spawnX: number;
   spawnY: number;
+  isPrivate: boolean;
 }
 
 @WebSocketGateway({
@@ -56,6 +57,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server!: GameServer;
 
   private rooms = new Map<string, ServerRoomStat>();
+  private deletionTimers = new Map<string, NodeJS.Timeout>();
 
   async handleConnection(client: ClientSocket) {
     const Avatar = Array.isArray(client.handshake.query.avatar)
@@ -85,6 +87,12 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    const pendingTimer = this.deletionTimers.get(code);
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      this.deletionTimers.delete(code);
+    }
+
     let roomState = this.rooms.get(code);
 
     if (!roomState) {
@@ -101,6 +109,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         spawnX: room.map.spawnX,
         spawnY: room.map.spawnY,
         collisionGrid: new CollisionGrid(room.map.mapData),
+        isPrivate: room.isPrivate,
       };
       this.rooms.set(code, roomState);
     }
@@ -192,7 +201,25 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.server.to(code).emit('playerLeft', player);
       }
       if (roomState.players.size === 0) {
-        this.rooms.delete(code);
+        if (roomState.isPrivate) {
+          const existingTimer = this.deletionTimers.get(code);
+          if (existingTimer) {
+            clearTimeout(existingTimer);
+          }
+
+          const timer = setTimeout(
+            async () => {
+              this.deletionTimers.delete(code);
+              this.rooms.delete(code);
+              await this.roomService.deleteRoom(code);
+            },
+            3 * 60 * 1000,
+          );
+
+          this.deletionTimers.set(code, timer);
+        } else {
+          this.rooms.delete(code);
+        }
       }
     }
   }

@@ -1,7 +1,7 @@
 import type { RoomScene } from '../scenes/RoomScene';
 import type { Direction } from '@repo/types';
 
-const THROTTLE_MS = 50;
+const THROTTLE_MS = 75;
 
 export function movementInputManager(scene: RoomScene) {
   const mySprite = scene.players.get(scene.networkManager.socket.id!);

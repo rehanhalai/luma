@@ -1,10 +1,10 @@
 import StartGame from '@/modules/game/phaser/config';
-import { useState, useRef, useLayoutEffect, forwardRef } from 'react';
+import { useRef, useLayoutEffect, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useRoom } from './hooks/useRoom';
 import { ChatBox } from './components/ChatBox';
+import { RoomHeaderHUD } from './components/RoomHeaderHUD';
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -15,7 +15,6 @@ export const GamePage = forwardRef<IRefPhaserGame>(
   function GamePage(_props, ref) {
     const navigate = useNavigate();
     const { roomParams, isLoading, error } = useRoom();
-    const [copied, setCopied] = useState(false);
 
     const gameRef = useRef<Phaser.Game | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -46,15 +45,6 @@ export const GamePage = forwardRef<IRefPhaserGame>(
       };
     }, [isLoading, roomParams, ref]);
 
-    const handleCopyLink = () => {
-      if (!roomParams?.roomCode) return;
-      const inviteUrl = `${window.location.origin}/room?code=${encodeURIComponent(roomParams.roomCode)}`;
-      void navigator.clipboard.writeText(inviteUrl).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
-    };
-
     if (isLoading) {
       return (
         <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center space-y-3">
@@ -80,38 +70,10 @@ export const GamePage = forwardRef<IRefPhaserGame>(
     return (
       <div className="relative w-screen h-screen overflow-hidden">
         <div ref={containerRef} className="w-full h-full" />
-
-        {/* In-Game Room HUD */}
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-background/85 backdrop-blur-md border border-border/80 px-3 py-1.5 shadow-sm">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground font-medium">
-              Room:
-            </span>
-            <Badge
-              variant="outline"
-              className="font-mono text-xs font-semibold px-1.5 py-0"
-            >
-              {roomParams.roomCode}
-            </Badge>
-          </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="h-6 text-[11px] px-2 shadow-none cursor-pointer"
-            onClick={handleCopyLink}
-          >
-            {copied ? 'Copied!' : 'Copy Link'}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-[11px] px-2 text-muted-foreground hover:text-foreground cursor-pointer"
-            onClick={() => navigate('/')}
-          >
-            Leave
-          </Button>
-        </div>
-
+        <RoomHeaderHUD
+          roomCode={roomParams.roomCode}
+          onLeave={() => navigate('/')}
+        />
         <ChatBox />
       </div>
     );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getRoom, getMap, type RoomWithMap } from '../api/game.api';
 import type { RoomParams } from '../phaser/config';
@@ -49,14 +49,15 @@ export function useRoom() {
     };
   }, [roomCode]);
 
-  const roomParams: RoomParams | null = roomData
-    ? {
-        roomCode,
-        name,
-        avatar,
-        map: roomData.map,
-      }
-    : null;
+  const roomParams: RoomParams | null = useMemo(() => {
+    if (!roomData) return null;
+    return {
+      roomCode,
+      name,
+      avatar,
+      map: roomData.map,
+    };
+  }, [roomData, roomCode, name, avatar]);
 
   return {
     roomCode,

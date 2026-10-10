@@ -21,7 +21,7 @@ import { CollisionGrid } from './collision/collision-grid';
 
 interface ClientSocketData {
   roomCode: string;
-  lastChatTime: number;
+  lastChatTime?: number;
 }
 
 type ClientSocket = Socket<
@@ -153,14 +153,19 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: ClientSocket,
     @MessageBody() message: string,
   ) {
-    if (Date.now() - client.data.lastChatTime < 2000) return;
-    client.data.lastChatTime = Date.now();
+    if (
+      client.data.lastChatTime &&
+      Date.now() - client.data.lastChatTime < 2000
+    ) {
+      return;
+    }
 
     const roomCode = client.data.roomCode;
     if (!roomCode || typeof message !== 'string') return;
 
     const trimmed = message.trim();
     if (!trimmed || trimmed.length > 200) return;
+    client.data.lastChatTime = Date.now();
 
     const roomState = this.rooms.get(roomCode);
     const player = roomState?.players.get(client.id);

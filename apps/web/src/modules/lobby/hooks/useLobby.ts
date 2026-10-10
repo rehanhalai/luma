@@ -13,7 +13,7 @@ export function useLobby() {
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('Female-01-1');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [joinCode, setJoinCode] = useState('');
+  const [code, setCode] = useState('');
 
   // 1. Rooms Query
   const {
@@ -82,8 +82,8 @@ export function useLobby() {
   };
 
   const handleJoinByCode = () => {
-    if (joinCode.trim()) {
-      handleJoinRoom(joinCode.trim());
+    if (code.trim()) {
+      handleJoinRoom(code.trim());
     }
   };
 
@@ -101,8 +101,8 @@ export function useLobby() {
     isLoading: isLoadingRooms,
     isAvatarsLoading,
     error: roomsError instanceof Error ? roomsError.message : null,
-    joinCode,
-    setJoinCode,
+    code,
+    setCode,
     handleJoinRoom,
     handleJoinByCode,
     handleCreatePrivateRoom,

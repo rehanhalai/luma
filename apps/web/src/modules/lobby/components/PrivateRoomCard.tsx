@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Card,
   CardHeader,
@@ -10,8 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 interface PrivateRoomCardProps {
+  code: string;
+  onCodeChange: (code: string) => void;
   onCreatePrivateRoom: () => void;
-  onJoinByCode: (code: string) => void;
+  onJoinByCode: () => void;
   isCreating: boolean;
   error?: string | null;
 }
@@ -36,18 +37,17 @@ function extractRoomCode(input: string): string {
 }
 
 export function PrivateRoomCard({
+  code,
+  onCodeChange,
   onCreatePrivateRoom,
   onJoinByCode,
   isCreating,
   error,
 }: PrivateRoomCardProps) {
-  const [code, setCode] = useState('');
-
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanCode = extractRoomCode(code);
-    if (cleanCode) {
-      onJoinByCode(cleanCode);
+    if (code.trim()) {
+      onJoinByCode();
     }
   };
 
@@ -57,7 +57,7 @@ export function PrivateRoomCard({
       const extracted = extractRoomCode(pasted);
       if (extracted) {
         e.preventDefault();
-        setCode(extracted);
+        onCodeChange(extracted);
       }
     }
   };
@@ -97,7 +97,7 @@ export function PrivateRoomCard({
             placeholder="e.g. 7K9X2B or paste link"
             value={code}
             maxLength={10}
-            onChange={(e) => setCode(extractRoomCode(e.target.value))}
+            onChange={(e) => onCodeChange(extractRoomCode(e.target.value))}
             onPaste={handlePaste}
             className="uppercase font-mono text-xs tracking-wider"
           />

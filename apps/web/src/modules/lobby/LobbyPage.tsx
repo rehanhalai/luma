@@ -19,6 +19,8 @@ export function LobbyPage() {
     isLoading,
     isAvatarsLoading,
     error,
+    code,
+    setCode,
     handleJoinRoom,
     handleJoinByCode,
     handleCreatePrivateRoom,
@@ -58,6 +60,8 @@ export function LobbyPage() {
             />
 
             <PrivateRoomCard
+              code={code}
+              onCodeChange={setCode}
               onCreatePrivateRoom={handleCreatePrivateRoom}
               onJoinByCode={handleJoinByCode}
               isCreating={isCreatingRoom}

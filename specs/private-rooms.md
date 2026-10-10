@@ -133,10 +133,10 @@ export interface CreateRoomDto {
 
 ## 6. Verification Checklist
 
-- [ ] `pnpm --filter @repo/database db:generate` passes.
-- [ ] `pnpm --filter @repo/types build` passes.
-- [ ] `pnpm format` and `pnpm lint` pass cleanly with no errors.
-- [ ] Public rooms list displays only seeded public rooms.
-- [ ] Clicking "Create Private Room" creates a private room using TanStack Query mutation and navigates in.
-- [ ] Entering code in "Join via Code" navigates into that private room.
-- [ ] Disconnecting all players starts grace period; reconnecting within 3 minutes cancels teardown; leaving empty for 3 minutes deletes it.
+- [x] `pnpm --filter @repo/database db:generate` passes.
+- [x] `pnpm --filter @repo/types build` passes.
+- [x] `pnpm format` and `pnpm lint` pass cleanly with no errors.
+- [x] Public rooms list displays only seeded public rooms.
+- [x] Clicking "Create Private Room" creates a private room using TanStack Query mutation and navigates in.
+- [x] Entering code in "Join via Code" navigates into that private room.
+- [x] Disconnecting all players starts grace period; reconnecting within 3 minutes cancels teardown; leaving empty for 3 minutes deletes it.

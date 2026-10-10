@@ -16,6 +16,25 @@ interface PrivateRoomCardProps {
   error?: string | null;
 }
 
+function extractRoomCode(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+
+  // Extract from query parameter (?code=... or &code=...)
+  const queryMatch = trimmed.match(/[?&]code=([^&#\s]+)/i);
+  if (queryMatch?.[1]) {
+    return decodeURIComponent(queryMatch[1]).toUpperCase();
+  }
+
+  // Extract from route path (/room/...)
+  const pathMatch = trimmed.match(/\/room\/([a-zA-Z0-9_-]+)/i);
+  if (pathMatch?.[1]) {
+    return pathMatch[1].toUpperCase();
+  }
+
+  return trimmed.toUpperCase();
+}
+
 export function PrivateRoomCard({
   onCreatePrivateRoom,
   onJoinByCode,
@@ -26,8 +45,20 @@ export function PrivateRoomCard({
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.trim()) {
-      onJoinByCode(code.trim().toUpperCase());
+    const cleanCode = extractRoomCode(code);
+    if (cleanCode) {
+      onJoinByCode(cleanCode);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    if (pasted) {
+      const extracted = extractRoomCode(pasted);
+      if (extracted) {
+        e.preventDefault();
+        setCode(extracted);
+      }
     }
   };
 
@@ -45,8 +76,9 @@ export function PrivateRoomCard({
         )}
 
         <Button
+          type="button"
           size="sm"
-          className="w-full text-xs h-8 shadow-sm"
+          className="w-full text-xs h-8 shadow-sm cursor-pointer"
           onClick={onCreatePrivateRoom}
           disabled={isCreating}
         >
@@ -62,17 +94,18 @@ export function PrivateRoomCard({
 
         <form onSubmit={handleJoin} className="flex gap-2 pt-1">
           <Input
-            placeholder="e.g. 7K9X2B"
+            placeholder="e.g. 7K9X2B or paste link"
             value={code}
             maxLength={10}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) => setCode(extractRoomCode(e.target.value))}
+            onPaste={handlePaste}
             className="uppercase font-mono text-xs tracking-wider"
           />
           <Button
             type="submit"
             size="sm"
             variant="outline"
-            className="h-8 text-xs px-3 shrink-0"
+            className="h-8 text-xs px-3 shrink-0 cursor-pointer"
             disabled={!code.trim() || isCreating}
           >
             Join

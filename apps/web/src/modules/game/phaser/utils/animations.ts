@@ -112,9 +112,6 @@ export function setupSocketListeners(scene: RoomScene, player: Player) {
     .setOrigin(0.5);
   nameTag.setDepth(11);
   sprite.setData('nameTag', nameTag);
-  if (scene.minimapManager?.camera) {
-    scene.minimapManager.camera.ignore(nameTag);
-  }
 
   sprite.on('destroy', () => {
     nameTag.destroy();

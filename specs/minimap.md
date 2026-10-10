@@ -1,92 +1,100 @@
-# Feature Specification: Dynamic Minimap
+# Feature Specification: In-Game Minimap (Tactical Radar)
 
 ## 1. Overview
 
-Adds a real-time, dynamic minimap to the bottom-right corner of the game screen using Phaser's multi-camera system (`this.cameras.add()`). The minimap provides a scaled-down, full-world bird's-eye view of the active map and all players.
+Provides players with a real-time tactical radar minimap fixed to the bottom-right corner of the game screen. The radar is centered on the local player, scanning a local radius around them, showing nearby players as position dots and distant players clamped to the radar's edge.
 
-It automatically computes scale and zoom based on the loaded map dimensions, ensuring it works dynamically with the default Town Square map and any future maps.
+The radar is rendered via Phaser Vector Graphics (`this.add.graphics`), ensuring zero network overhead, high-performance 60fps updates, and 100% dynamic compatibility with any future maps.
 
 ---
 
 ## 2. Requirements & Behavior
 
-### A. Secondary Camera Architecture
+### A. Position & Geometry
+- **Placement**: Docked in the bottom-right corner of the viewport (offset by ~24px padding), responsive to window resizing.
+- **Shape & Size**: Circular radar with radius $R = 64\text{px}$ (diameter $128\text{px}$).
+- **Scroll Factor**: `setScrollFactor(0)` so it remains fixed to screen coordinates as the camera moves.
+- **Visual Depth**: High depth (`setDepth(100)`) so it stays above map layers and game sprites, but below modal dialogs.
 
-- Implemented natively via Phaser's `this.cameras.add(x, y, width, height)`.
-- Renders the actual live tilemap layers and player sprites.
-- Ignored elements: Main camera ignores minimap HUD graphics; minimap camera ignores player floating nametags to prevent visual clutter.
+### B. Visual Styling (Tactical HUD)
+- **Background**: Translucent dark circle (`#0b0f19` or `0x0f172a`, alpha `0.85`).
+- **Outer Rim**: Crisp border ring (`0x38bdf8` or `0x475569`, 2px thickness, alpha `0.8`).
+- **Range Rings**: Subtle inner concentric circle at $R/2$ (alpha `0.2`) and faint cardinal crosshair axes.
 
-### B. Dynamic Full-Map Fit
+### C. Local Player Representation
+- **Position**: Always pinned at the exact center of the radar circle `(centerX, centerY)`.
+- **Marker**: Distinctive cyan/emerald dot (radius 4px).
+- **Direction Pointer**: Directional tick or arrow pointing toward the player's active facing direction (`u`, `d`, `l`, `r`).
 
-- Minimap viewport: Fixed HUD dimension (e.g., `180x180` px or `200x200` px).
-- Zoom level is dynamically derived from map bounds:
-  $$\text{zoom} = \min\left(\frac{\text{minimapWidth}}{\text{worldWidth}}, \frac{\text{minimapHeight}}{\text{worldHeight}}\right)$$
-  where $\text{worldWidth} = \text{tilemap.widthInPixels} \times 3$ and $\text{worldHeight} = \text{tilemap.heightInPixels} \times 3$.
-- Center point: Centered on the geometric center of the world so the full map is visible at all times.
+### D. Other Players Representation
+- **World Range**: Radar covers a world radius of $W_{\text{range}} = 800\text{px}$ around the local player.
+- **Relative Distance**: For each other player:
+  $$\Delta x = x_{\text{other}} - x_{\text{local}}, \quad \Delta y = y_{\text{other}} - y_{\text{local}}$$
+  $$\text{dist} = \sqrt{\Delta x^2 + \Delta y^2}$$
+- **Inside Radar Range ($\text{dist} \le W_{\text{range}}$)**:
+  - Scaled position:
+    $$x_{\text{radar}} = \text{centerX} + \Delta x \cdot \left(\frac{R}{W_{\text{range}}}\right)$$
+    $$y_{\text{radar}} = \text{centerY} + \Delta y \cdot \left(\frac{R}{W_{\text{range}}}\right)$$
+  - Rendered as an amber/yellow dot (radius 3px).
+- **Outside Radar Range ($\text{dist} > W_{\text{range}}$)**:
+  - Directional Edge Clamping: Clamped to the radar's circumference $(R - 4\text{px})$ along angle $\theta = \text{atan2}(\Delta y, \Delta x)$:
+    $$x_{\text{radar}} = \text{centerX} + (R - 4) \cos\theta$$
+    $$y_{\text{radar}} = \text{centerY} + (R - 4) \sin\theta$$
+  - Rendered as a smaller edge indicator dot (radius 2px, alpha `0.7`).
 
-### C. Screen Placement & Responsiveness
+### E. Dynamic Map Portability
+- The radar strictly operates on relative coordinate offsets $(\Delta x, \Delta y)$ and the local player's position.
+- No hardcoded map dimensions or tileset dependencies: automatically works on any map loaded now or in the future.
 
-- Docked in the **bottom-right corner** with 16px padding from screen edges, opposite the bottom-left chat box.
-- Listens to Phaser scale resize events (`this.scale.on('resize')`) to maintain bottom-right anchoring when resizing the browser window.
-- Styled with a sleek semi-transparent dark border and background (`#111116` with thin border).
-
-### D. High-Visibility Player Markers & Viewport Box
-
-- Drawn on a dedicated `minimapGraphics` layer (ignored by the main camera):
-  - **Local Player**: Bright emerald green indicator dot (`#00ff88`).
-  - **Remote Players**: Golden yellow indicator dots (`#ffcc00`).
-  - **Viewport Box**: A high-contrast stroke rectangle showing the main camera's current visible viewing frustum (`cameras.main.worldView`).
-- Indicator sizes scale inversely with zoom ($r \propto 1 / \text{zoom}$) so markers remain clear and readable on any map resolution.
-
-### E. Interactivity & Toggling
-
-- **'M' Hotkey**: Toggles the minimap visibility (show/hide).
-- **Chat Guard**: When the player is focused on chat input (`registry.get('isChatFocused') === true`), typing the letter 'M' must NOT toggle the minimap.
-- **HUD Toggle Button**: A subtle toggle icon button overlaid on/near the minimap for mouse users.
+### F. Performance & Lifecycle
+- Re-draws each frame in `scene.update()` via `MinimapManager.update()`.
+- Automatically destroyed when `RoomScene` shuts down or is destroyed.
 
 ---
 
 ## 3. Out of Scope (Non-Goals)
 
-- **Fog of War / Discovery Masking**: Full map is visible immediately.
-- **Click-to-Move / Click-to-Pan**: Minimap is display-only with toggle; clicking it does not move the player character or change camera scroll.
-- **Server-Side Networking Changes**: The minimap runs entirely client-side using existing socket player position streams (`scene.players`). No backend or socket protocol changes needed.
-- **Custom Map Editor**: Minimap reads existing Tiled JSON map metadata dynamically.
+- **Tilemap Texture Baking**: No full-map snapshot rendering or secondary cameras that duplicate draw calls.
+- **Interactive Clicking / Fast Travel**: Clicking the minimap does not move the player or open full-screen maps.
+- **Fog of War**: All players in the room are tracked based on their broadcasted socket coordinates.
 
 ---
 
-## 4. Technical Design (`apps/web`)
+## 4. Architecture & Data Flow
 
-### Component Breakdown
-
-1. **`MinimapManager.ts`** (`apps/web/src/modules/game/phaser/utils/minimap.ts`):
-   - Encapsulates secondary camera creation, dynamic zoom calculation, window resize handling, indicator drawing, and toggle logic.
-   - Cleans up camera and listeners on scene shutdown/destroy.
-2. **`RoomScene.ts`**:
-   - Instantiates `MinimapManager` in `create()` after map layers and network manager are ready.
-   - Calls `minimapManager.update()` inside `update()` to redraw player dots and viewport frustum.
-3. **`animations.ts`**:
-   - Ensures newly spawned player nametags are ignored by the minimap camera.
+```text
+RoomScene.ts (update loop)
+    │
+    ▼
+MinimapManager.update()
+    ├── 1. Get local player sprite from scene.players.get(localSocketId)
+    ├── 2. Calculate dynamic screen position (viewport width/height - margin)
+    ├── 3. Clear and draw radar background & rings
+    ├── 4. Draw local player marker at center with facing direction
+    └── 5. Iterate scene.players:
+            ├── Skip local player
+            ├── Calculate offset (Δx, Δy) and distance
+            └── Draw dot (inside range) or clamped edge indicator (outside range)
+```
 
 ---
 
 ## 5. Affected Files
 
-1. `specs/minimap.md`: Feature specification.
-2. `apps/web/src/modules/game/phaser/utils/minimap.ts`: [NEW] `MinimapManager` class.
-3. `apps/web/src/modules/game/phaser/scenes/RoomScene.ts`: Initialize and update minimap.
-4. `apps/web/src/modules/game/phaser/utils/animations.ts`: Ignore nametags on minimap camera.
+1. `apps/web/src/modules/game/phaser/utils/minimap.ts`: New file implementing `MinimapManager` class.
+2. `apps/web/src/modules/game/phaser/scenes/RoomScene.ts`:
+   - Initialize `this.minimapManager = new MinimapManager(this)` in `create()`.
+   - Call `this.minimapManager.update()` in `update()`.
+   - Clean up `this.minimapManager.destroy()` on scene shutdown/destroy.
 
 ---
 
 ## 6. Verification Checklist
 
-- [x] `pnpm build` passes with zero type errors.
-- [x] `pnpm format` and `pnpm lint` pass with no errors.
-- [x] Minimap renders in the bottom-right corner showing the full town map.
-- [x] Local player is marked with a green indicator dot; remote players are marked with yellow dots.
-- [x] Viewport box moves and tracks the main camera scroll as the player moves.
-- [x] Pressing `M` toggles the minimap on and off.
-- [x] Typing `M` in the chat input does NOT toggle the minimap.
-- [x] Resizing the browser window keeps the minimap docked cleanly in the bottom-right.
-- [x] Leaving the room and returning does not crash or leak camera instances.
+- [ ] `pnpm build` passes with 0 TypeScript errors.
+- [ ] `pnpm format` and `pnpm lint` pass cleanly.
+- [ ] Minimap appears in bottom-right corner when entering any room.
+- [ ] Center dot follows local player and updates directional indicator with WASD movement.
+- [ ] Moving toward another player shows their dot moving closer to the center of the radar.
+- [ ] Moving away from another player causes their dot to clamp to the rim of the radar.
+- [ ] Leaving the room and returning cleans up and recreates the radar without memory leaks.

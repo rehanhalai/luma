@@ -1,5 +1,6 @@
 import {
   WebSocketGateway,
+  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
   WebSocketServer,
@@ -7,6 +8,7 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
+import type { OnModuleDestroy } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { randomUUID } from 'node:crypto';
 import { RoomsService } from './rooms.service';
@@ -15,6 +17,7 @@ import type {
   ServerToClientEvents,
   ClientToServerEvents,
   MovementPayload,
+  PlayerMovedPayload,
   ChatMessage,
 } from '@repo/types/socket';
 import { CollisionGrid } from './collision/collision-grid';
@@ -43,6 +46,7 @@ interface ServerRoomStat extends RoomStat {
   spawnX: number;
   spawnY: number;
   isPrivate: boolean;
+  pendingMoves: Map<string, PlayerMovedPayload>;
 }
 
 @WebSocketGateway({
@@ -51,13 +55,40 @@ interface ServerRoomStat extends RoomStat {
     origin: '*',
   },
 })
-export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class RoomsGateway
+  implements
+    OnGatewayInit,
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnModuleDestroy
+{
   constructor(private readonly roomService: RoomsService) {}
   @WebSocketServer()
   server!: GameServer;
 
   private rooms = new Map<string, ServerRoomStat>();
   private deletionTimers = new Map<string, NodeJS.Timeout>();
+  private tickInterval: NodeJS.Timeout | null = null;
+
+  afterInit() {
+    this.tickInterval = setInterval(() => this.tick(), 50);
+  }
+
+  onModuleDestroy() {
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
+    }
+  }
+
+  private tick() {
+    for (const [code, roomState] of this.rooms) {
+      if (roomState.pendingMoves.size === 0) continue;
+      const updates = Array.from(roomState.pendingMoves.values());
+      roomState.pendingMoves.clear();
+      this.server.to(code).emit('batchMove', updates);
+    }
+  }
 
   async handleConnection(client: ClientSocket) {
     const Avatar = Array.isArray(client.handshake.query.avatar)
@@ -110,6 +141,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         spawnY: room.map.spawnY,
         collisionGrid: new CollisionGrid(room.map.mapData),
         isPrivate: room.isPrivate,
+        pendingMoves: new Map(),
       };
       this.rooms.set(code, roomState);
     }
@@ -148,9 +180,12 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         player.x = x;
         player.y = y;
 
-        client.broadcast
-          .to(roomCode)
-          .emit('move', [client.id, player.x, player.y, direction]);
+        roomState.pendingMoves.set(client.id, [
+          client.id,
+          player.x,
+          player.y,
+          direction,
+        ]);
       } else {
         client.emit('move', [client.id, player.x, player.y, 's']);
       }
@@ -197,6 +232,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (roomState) {
       const player = roomState.players.get(client.id);
       roomState.players.delete(client.id);
+      roomState.pendingMoves.delete(client.id);
       if (player) {
         this.server.to(code).emit('playerLeft', player);
       }

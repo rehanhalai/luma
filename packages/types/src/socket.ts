@@ -22,6 +22,7 @@ export interface ServerToClientEvents {
   currentPlayers: (players: Player[]) => void;
   playerJoined: (player: Player) => void;
   move: (data: PlayerMovedPayload) => void;
+  batchMove: (updates: PlayerMovedPayload[]) => void;
   playerLeft: (player: Player) => void;
   error: (message: string) => void;
   chatMessage: (data: ChatMessage) => void;

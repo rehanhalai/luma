@@ -60,6 +60,14 @@ export class NetworkManager {
       handlePlayerMovement(this.scene, id, x, y, direction);
     });
 
+    this.socket.on('batchMove', (updates) => {
+      const myId = this.socket.id;
+      updates.forEach(([id, x, y, direction]) => {
+        if (id === myId) return;
+        handlePlayerMovement(this.scene, id, x, y, direction);
+      });
+    });
+
     this.socket.on('chatMessage', (data: ChatMessage) => {
       EventBus.emit('chat-message-received', data);
     });

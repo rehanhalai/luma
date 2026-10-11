@@ -17,9 +17,11 @@ import type {
   ServerToClientEvents,
   ClientToServerEvents,
   MovementPayload,
-  PlayerMovedPayload,
+  Direction,
   ChatMessage,
 } from '@repo/types/socket';
+import type { BinaryMovementEntry } from '@repo/types/binary';
+import { encodeMovementBatch } from './binary/movement-encoding';
 import { CollisionGrid } from './collision/collision-grid';
 
 interface ClientSocketData {
@@ -76,14 +78,25 @@ function getNeighborCellKeysFromKey(cellKey: string): string[] {
   return keys;
 }
 
+type PendingMove = [
+  id: string,
+  numericId: number,
+  x: number,
+  y: number,
+  dir: Direction,
+];
+
 interface ServerRoomStat extends RoomStat {
   collisionGrid: CollisionGrid;
   spawnX: number;
   spawnY: number;
   isPrivate: boolean;
-  pendingMoves: Map<string, PlayerMovedPayload>;
+  pendingMoves: Map<string, PendingMove>;
   playerCells: Map<string, string>;
   sockets: Map<string, ClientSocket>;
+  nextNumericId: number;
+  playerNumericIds: Map<string, number>;
+  numericIdToPlayerId: Map<number, string>;
 }
 
 @WebSocketGateway({
@@ -123,38 +136,48 @@ export class RoomsGateway
       if (roomState.pendingMoves.size === 0) continue;
 
       // Group pending moves by cell key
-      const movesByCell = new Map<string, PlayerMovedPayload[]>();
+      const movesByCell = new Map<string, BinaryMovementEntry[]>();
       for (const move of roomState.pendingMoves.values()) {
-        const cellKey = getCellKey(move[1], move[2]);
+        const cellKey = getCellKey(move[2], move[3]);
         let list = movesByCell.get(cellKey);
         if (!list) {
           list = [];
           movesByCell.set(cellKey, list);
         }
-        list.push(move);
+        list.push([move[1], move[2], move[3], move[4]]);
       }
       roomState.pendingMoves.clear();
 
-      // Gather updates from 3x3 neighbor cells for each connected client
+      // Cache encoded binary buffer per cell to avoid redundant encoding
+      const bufferByCell = new Map<string, ArrayBuffer | null>();
+
       for (const [clientId, player] of roomState.players) {
         const clientSocket = roomState.sockets.get(clientId);
         if (!clientSocket) continue;
 
-        const neighborKeys = getNeighborCellKeys(player.x, player.y);
-        let clientUpdates: PlayerMovedPayload[] | null = null;
+        const cellKey =
+          roomState.playerCells.get(clientId) || getCellKey(player.x, player.y);
 
-        for (let i = 0; i < neighborKeys.length; i++) {
-          const cellMoves = movesByCell.get(neighborKeys[i]!);
-          if (cellMoves && cellMoves.length > 0) {
-            if (!clientUpdates) clientUpdates = [];
-            for (let j = 0; j < cellMoves.length; j++) {
-              clientUpdates.push(cellMoves[j]!);
+        let cellBuffer = bufferByCell.get(cellKey);
+        if (cellBuffer === undefined) {
+          const neighborKeys = getNeighborCellKeysFromKey(cellKey);
+          const cellUpdates: BinaryMovementEntry[] = [];
+          for (let i = 0; i < neighborKeys.length; i++) {
+            const cellMoves = movesByCell.get(neighborKeys[i]!);
+            if (cellMoves && cellMoves.length > 0) {
+              for (let j = 0; j < cellMoves.length; j++) {
+                cellUpdates.push(cellMoves[j]!);
+              }
             }
           }
+          const encoded =
+            cellUpdates.length > 0 ? encodeMovementBatch(cellUpdates) : null;
+          bufferByCell.set(cellKey, encoded);
+          cellBuffer = encoded;
         }
 
-        if (clientUpdates && clientUpdates.length > 0) {
-          clientSocket.emit('batchMove', clientUpdates);
+        if (cellBuffer) {
+          clientSocket.emit('batchMove', cellBuffer);
         }
       }
     }
@@ -214,12 +237,23 @@ export class RoomsGateway
         pendingMoves: new Map(),
         playerCells: new Map(),
         sockets: new Map(),
+        nextNumericId: 1,
+        playerNumericIds: new Map(),
+        numericIdToPlayerId: new Map(),
       };
       this.rooms.set(code, roomState);
     }
 
+    const numericId = roomState.nextNumericId++;
+    if (roomState.nextNumericId > 65535) {
+      roomState.nextNumericId = 1;
+    }
+    roomState.playerNumericIds.set(client.id, numericId);
+    roomState.numericIdToPlayerId.set(numericId, client.id);
+
     const newPlayer: Player = {
       id: client.id,
+      numericId,
       name: PlayerName,
       avatar: Avatar,
       x: roomState.spawnX,
@@ -266,23 +300,30 @@ export class RoomsGateway
           );
 
           // Collect positions of players in the newly entered cells
-          const syncUpdates: PlayerMovedPayload[] = [];
+          const syncEntries: BinaryMovementEntry[] = [];
           for (const [otherId, otherPlayer] of roomState.players) {
             if (otherId === client.id) continue;
             const otherCell = roomState.playerCells.get(otherId);
             if (otherCell && enteredCells.includes(otherCell)) {
-              syncUpdates.push([otherId, otherPlayer.x, otherPlayer.y, 's']);
+              syncEntries.push([
+                otherPlayer.numericId,
+                otherPlayer.x,
+                otherPlayer.y,
+                's',
+              ]);
             }
           }
 
-          if (syncUpdates.length > 0) {
-            client.emit('batchMove', syncUpdates);
+          if (syncEntries.length > 0) {
+            client.emit('batchMove', encodeMovementBatch(syncEntries));
           }
         }
         roomState.playerCells.set(client.id, newCell);
 
+        const numId = roomState.playerNumericIds.get(client.id) ?? 0;
         roomState.pendingMoves.set(client.id, [
           client.id,
+          numId,
           player.x,
           player.y,
           direction,
@@ -332,6 +373,11 @@ export class RoomsGateway
     const roomState = this.rooms.get(code);
     if (roomState) {
       const player = roomState.players.get(client.id);
+      const numId = roomState.playerNumericIds.get(client.id);
+      if (numId !== undefined) {
+        roomState.numericIdToPlayerId.delete(numId);
+        roomState.playerNumericIds.delete(client.id);
+      }
       roomState.players.delete(client.id);
       roomState.pendingMoves.delete(client.id);
       roomState.playerCells.delete(client.id);

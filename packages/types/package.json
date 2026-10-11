@@ -20,6 +20,10 @@
     "./models": {
       "types": "./src/models.ts",
       "default": "./src/models.ts"
+    },
+    "./binary": {
+      "types": "./src/binary.ts",
+      "default": "./src/binary.ts"
     }
   },
   "dependencies": {

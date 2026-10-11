@@ -5,6 +5,7 @@ import type {
   Direction,
   ChatMessage,
 } from '@repo/types/socket';
+import { decodeMovementBatch } from './movement-decoding';
 import { RoomScene } from '../phaser/scenes/RoomScene';
 import type { RoomParams } from '../phaser/config';
 import { EventBus } from '../phaser/EventBus';
@@ -17,6 +18,7 @@ export class NetworkManager {
   private scene: RoomScene;
   public socket: Socket<ServerToClientEvents, ClientToServerEvents>;
   public roomParams: RoomParams;
+  private numericToId = new Map<number, string>();
 
   constructor(scene: RoomScene, roomParams: RoomParams) {
     this.scene = scene;
@@ -38,16 +40,25 @@ export class NetworkManager {
   private initListeners() {
     this.socket.on('currentPlayers', (data) => {
       data.forEach((player) => {
+        if (player.numericId) {
+          this.numericToId.set(player.numericId, player.id);
+        }
         setupSocketListeners(this.scene, player);
       });
     });
 
     this.socket.on('playerJoined', (data) => {
+      if (data.numericId) {
+        this.numericToId.set(data.numericId, data.id);
+      }
       setupSocketListeners(this.scene, data);
       EventBus.emit('player-joined', data);
     });
 
     this.socket.on('playerLeft', (data) => {
+      if (data.numericId) {
+        this.numericToId.delete(data.numericId);
+      }
       const rect = this.scene.players.get(data.id);
       if (rect) {
         rect.destroy();
@@ -60,12 +71,22 @@ export class NetworkManager {
       handlePlayerMovement(this.scene, id, x, y, direction);
     });
 
-    this.socket.on('batchMove', (updates) => {
+    this.socket.on('batchMove', (data) => {
       const myId = this.socket.id;
-      updates.forEach(([id, x, y, direction]) => {
-        if (id === myId) return;
-        handlePlayerMovement(this.scene, id, x, y, direction);
-      });
+      if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
+        const updates = decodeMovementBatch(data);
+        for (let i = 0; i < updates.length; i++) {
+          const [numId, x, y, direction] = updates[i]!;
+          const id = this.numericToId.get(numId);
+          if (!id || id === myId) continue;
+          handlePlayerMovement(this.scene, id, x, y, direction);
+        }
+      } else if (Array.isArray(data)) {
+        data.forEach(([id, x, y, direction]) => {
+          if (id === myId) return;
+          handlePlayerMovement(this.scene, id, x, y, direction);
+        });
+      }
     });
 
     this.socket.on('chatMessage', (data: ChatMessage) => {

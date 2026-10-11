@@ -99,8 +99,8 @@ export interface ServerToClientEvents {
 ### Phase 3 Contract (Binary Protocol)
 
 ```ts
-// Binary packet layout:
-// [Count: Uint8] + Count * [ID: Uint16, X: Uint16, Y: Uint16, Dir: Uint8]
+// Binary packet layout (7 bytes per player, little-endian):
+// [numericId: Uint16 (2B)] + [x: Uint16 (2B)] + [y: Uint16 (2B)] + [dir: Uint8 (1B)]
 export type BinaryMovementBuffer = ArrayBuffer;
 ```
 

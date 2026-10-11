@@ -42,7 +42,7 @@ The optimization will be tackled in three modular phases:
 ### Phase 2: Spatial Interest Management (Area of Interest / AOI Grid)
 
 - **Mechanism**:
-  - Partition the 3840×2880 world into a spatial grid of cells (e.g., cell size $800\text{px} \times 800\text{px}$ or $960\text{px} \times 720\text{px}$).
+  - Partition the 3840×2880 world into a spatial grid of cells (e.g., cell size $1200\text{px} \times 1200\text{px}$).
   - Each player tracks their active cell coordinate `(cellX, cellY)`.
   - Clients only receive movement updates for players located in their current cell + the 8 adjacent surrounding cells (3×3 neighborhood).
   - Handles cell transitions: when a player enters/leaves interest range, the server emits `playerSpawn`/`playerDespawn` or reuses existing join/left events.

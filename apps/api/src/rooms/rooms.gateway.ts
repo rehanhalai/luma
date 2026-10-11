@@ -41,12 +41,49 @@ type GameServer = Server<
   ClientSocketData
 >;
 
+const AOI_CELL_SIZE = 1200;
+
+function getCellCoord(val: number): number {
+  return Math.floor(val / AOI_CELL_SIZE);
+}
+
+function getCellKey(x: number, y: number): string {
+  return `${getCellCoord(x)}_${getCellCoord(y)}`;
+}
+
+function getNeighborCellKeys(x: number, y: number): string[] {
+  const cx = getCellCoord(x);
+  const cy = getCellCoord(y);
+  const keys: string[] = [];
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      keys.push(`${cx + dx}_${cy + dy}`);
+    }
+  }
+  return keys;
+}
+
+function getNeighborCellKeysFromKey(cellKey: string): string[] {
+  const parts = cellKey.split('_');
+  const cx = Number(parts[0]);
+  const cy = Number(parts[1]);
+  const keys: string[] = [];
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      keys.push(`${cx + dx}_${cy + dy}`);
+    }
+  }
+  return keys;
+}
+
 interface ServerRoomStat extends RoomStat {
   collisionGrid: CollisionGrid;
   spawnX: number;
   spawnY: number;
   isPrivate: boolean;
   pendingMoves: Map<string, PlayerMovedPayload>;
+  playerCells: Map<string, string>;
+  sockets: Map<string, ClientSocket>;
 }
 
 @WebSocketGateway({
@@ -82,11 +119,44 @@ export class RoomsGateway
   }
 
   private tick() {
-    for (const [code, roomState] of this.rooms) {
+    for (const [, roomState] of this.rooms) {
       if (roomState.pendingMoves.size === 0) continue;
-      const updates = Array.from(roomState.pendingMoves.values());
+
+      // Group pending moves by cell key
+      const movesByCell = new Map<string, PlayerMovedPayload[]>();
+      for (const move of roomState.pendingMoves.values()) {
+        const cellKey = getCellKey(move[1], move[2]);
+        let list = movesByCell.get(cellKey);
+        if (!list) {
+          list = [];
+          movesByCell.set(cellKey, list);
+        }
+        list.push(move);
+      }
       roomState.pendingMoves.clear();
-      this.server.to(code).emit('batchMove', updates);
+
+      // Gather updates from 3x3 neighbor cells for each connected client
+      for (const [clientId, player] of roomState.players) {
+        const clientSocket = roomState.sockets.get(clientId);
+        if (!clientSocket) continue;
+
+        const neighborKeys = getNeighborCellKeys(player.x, player.y);
+        let clientUpdates: PlayerMovedPayload[] | null = null;
+
+        for (let i = 0; i < neighborKeys.length; i++) {
+          const cellMoves = movesByCell.get(neighborKeys[i]!);
+          if (cellMoves && cellMoves.length > 0) {
+            if (!clientUpdates) clientUpdates = [];
+            for (let j = 0; j < cellMoves.length; j++) {
+              clientUpdates.push(cellMoves[j]!);
+            }
+          }
+        }
+
+        if (clientUpdates && clientUpdates.length > 0) {
+          clientSocket.emit('batchMove', clientUpdates);
+        }
+      }
     }
   }
 
@@ -142,6 +212,8 @@ export class RoomsGateway
         collisionGrid: new CollisionGrid(room.map.mapData),
         isPrivate: room.isPrivate,
         pendingMoves: new Map(),
+        playerCells: new Map(),
+        sockets: new Map(),
       };
       this.rooms.set(code, roomState);
     }
@@ -154,6 +226,8 @@ export class RoomsGateway
       y: roomState.spawnY,
     };
     roomState.players.set(client.id, newPlayer);
+    roomState.sockets.set(client.id, client);
+    roomState.playerCells.set(client.id, getCellKey(newPlayer.x, newPlayer.y));
 
     void client.join(code);
     client.data.roomCode = code;
@@ -179,6 +253,33 @@ export class RoomsGateway
       if (isWalkable) {
         player.x = x;
         player.y = y;
+
+        const newCell = getCellKey(player.x, player.y);
+        const prevCell = roomState.playerCells.get(client.id);
+
+        if (prevCell && prevCell !== newCell) {
+          // Player crossed into a new cell!
+          const prevNeighbors = new Set(getNeighborCellKeysFromKey(prevCell));
+          const newNeighbors = getNeighborCellKeys(player.x, player.y);
+          const enteredCells = newNeighbors.filter(
+            (k) => !prevNeighbors.has(k),
+          );
+
+          // Collect positions of players in the newly entered cells
+          const syncUpdates: PlayerMovedPayload[] = [];
+          for (const [otherId, otherPlayer] of roomState.players) {
+            if (otherId === client.id) continue;
+            const otherCell = roomState.playerCells.get(otherId);
+            if (otherCell && enteredCells.includes(otherCell)) {
+              syncUpdates.push([otherId, otherPlayer.x, otherPlayer.y, 's']);
+            }
+          }
+
+          if (syncUpdates.length > 0) {
+            client.emit('batchMove', syncUpdates);
+          }
+        }
+        roomState.playerCells.set(client.id, newCell);
 
         roomState.pendingMoves.set(client.id, [
           client.id,
@@ -233,6 +334,8 @@ export class RoomsGateway
       const player = roomState.players.get(client.id);
       roomState.players.delete(client.id);
       roomState.pendingMoves.delete(client.id);
+      roomState.playerCells.delete(client.id);
+      roomState.sockets.delete(client.id);
       if (player) {
         this.server.to(code).emit('playerLeft', player);
       }

@@ -1,5 +1,6 @@
 import {
   WebSocketGateway,
+  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
   WebSocketServer,
@@ -7,6 +8,7 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
+import type { OnModuleDestroy } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { randomUUID } from 'node:crypto';
 import { RoomsService } from './rooms.service';
@@ -15,8 +17,11 @@ import type {
   ServerToClientEvents,
   ClientToServerEvents,
   MovementPayload,
+  Direction,
   ChatMessage,
 } from '@repo/types/socket';
+import type { BinaryMovementEntry } from '@repo/types/binary';
+import { encodeMovementBatch } from './binary/movement-encoding';
 import { CollisionGrid } from './collision/collision-grid';
 
 interface ClientSocketData {
@@ -38,11 +43,60 @@ type GameServer = Server<
   ClientSocketData
 >;
 
+const AOI_CELL_SIZE = 1200;
+
+function getCellCoord(val: number): number {
+  return Math.floor(val / AOI_CELL_SIZE);
+}
+
+function getCellKey(x: number, y: number): string {
+  return `${getCellCoord(x)}_${getCellCoord(y)}`;
+}
+
+function getNeighborCellKeys(x: number, y: number): string[] {
+  const cx = getCellCoord(x);
+  const cy = getCellCoord(y);
+  const keys: string[] = [];
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      keys.push(`${cx + dx}_${cy + dy}`);
+    }
+  }
+  return keys;
+}
+
+function getNeighborCellKeysFromKey(cellKey: string): string[] {
+  const parts = cellKey.split('_');
+  const cx = Number(parts[0]);
+  const cy = Number(parts[1]);
+  const keys: string[] = [];
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      keys.push(`${cx + dx}_${cy + dy}`);
+    }
+  }
+  return keys;
+}
+
+type PendingMove = [
+  id: string,
+  numericId: number,
+  x: number,
+  y: number,
+  dir: Direction,
+];
+
 interface ServerRoomStat extends RoomStat {
   collisionGrid: CollisionGrid;
   spawnX: number;
   spawnY: number;
   isPrivate: boolean;
+  pendingMoves: Map<string, PendingMove>;
+  playerCells: Map<string, string>;
+  sockets: Map<string, ClientSocket>;
+  nextNumericId: number;
+  playerNumericIds: Map<string, number>;
+  numericIdToPlayerId: Map<number, string>;
 }
 
 @WebSocketGateway({
@@ -51,13 +105,83 @@ interface ServerRoomStat extends RoomStat {
     origin: '*',
   },
 })
-export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class RoomsGateway
+  implements
+    OnGatewayInit,
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnModuleDestroy
+{
   constructor(private readonly roomService: RoomsService) {}
   @WebSocketServer()
   server!: GameServer;
 
   private rooms = new Map<string, ServerRoomStat>();
   private deletionTimers = new Map<string, NodeJS.Timeout>();
+  private tickInterval: NodeJS.Timeout | null = null;
+
+  afterInit() {
+    this.tickInterval = setInterval(() => this.tick(), 50);
+  }
+
+  onModuleDestroy() {
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
+    }
+  }
+
+  private tick() {
+    for (const [, roomState] of this.rooms) {
+      if (roomState.pendingMoves.size === 0) continue;
+
+      // Group pending moves by cell key
+      const movesByCell = new Map<string, BinaryMovementEntry[]>();
+      for (const move of roomState.pendingMoves.values()) {
+        const cellKey = getCellKey(move[2], move[3]);
+        let list = movesByCell.get(cellKey);
+        if (!list) {
+          list = [];
+          movesByCell.set(cellKey, list);
+        }
+        list.push([move[1], move[2], move[3], move[4]]);
+      }
+      roomState.pendingMoves.clear();
+
+      // Cache encoded binary buffer per cell to avoid redundant encoding
+      const bufferByCell = new Map<string, ArrayBuffer | null>();
+
+      for (const [clientId, player] of roomState.players) {
+        const clientSocket = roomState.sockets.get(clientId);
+        if (!clientSocket) continue;
+
+        const cellKey =
+          roomState.playerCells.get(clientId) || getCellKey(player.x, player.y);
+
+        let cellBuffer = bufferByCell.get(cellKey);
+        if (cellBuffer === undefined) {
+          const neighborKeys = getNeighborCellKeysFromKey(cellKey);
+          const cellUpdates: BinaryMovementEntry[] = [];
+          for (let i = 0; i < neighborKeys.length; i++) {
+            const cellMoves = movesByCell.get(neighborKeys[i]!);
+            if (cellMoves && cellMoves.length > 0) {
+              for (let j = 0; j < cellMoves.length; j++) {
+                cellUpdates.push(cellMoves[j]!);
+              }
+            }
+          }
+          const encoded =
+            cellUpdates.length > 0 ? encodeMovementBatch(cellUpdates) : null;
+          bufferByCell.set(cellKey, encoded);
+          cellBuffer = encoded;
+        }
+
+        if (cellBuffer) {
+          clientSocket.emit('batchMove', cellBuffer);
+        }
+      }
+    }
+  }
 
   async handleConnection(client: ClientSocket) {
     const Avatar = Array.isArray(client.handshake.query.avatar)
@@ -110,18 +234,34 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         spawnY: room.map.spawnY,
         collisionGrid: new CollisionGrid(room.map.mapData),
         isPrivate: room.isPrivate,
+        pendingMoves: new Map(),
+        playerCells: new Map(),
+        sockets: new Map(),
+        nextNumericId: 1,
+        playerNumericIds: new Map(),
+        numericIdToPlayerId: new Map(),
       };
       this.rooms.set(code, roomState);
     }
 
+    const numericId = roomState.nextNumericId++;
+    if (roomState.nextNumericId > 65535) {
+      roomState.nextNumericId = 1;
+    }
+    roomState.playerNumericIds.set(client.id, numericId);
+    roomState.numericIdToPlayerId.set(numericId, client.id);
+
     const newPlayer: Player = {
       id: client.id,
+      numericId,
       name: PlayerName,
       avatar: Avatar,
       x: roomState.spawnX,
       y: roomState.spawnY,
     };
     roomState.players.set(client.id, newPlayer);
+    roomState.sockets.set(client.id, client);
+    roomState.playerCells.set(client.id, getCellKey(newPlayer.x, newPlayer.y));
 
     void client.join(code);
     client.data.roomCode = code;
@@ -148,9 +288,46 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         player.x = x;
         player.y = y;
 
-        client.broadcast
-          .to(roomCode)
-          .emit('move', [client.id, player.x, player.y, direction]);
+        const newCell = getCellKey(player.x, player.y);
+        const prevCell = roomState.playerCells.get(client.id);
+
+        if (prevCell && prevCell !== newCell) {
+          // Player crossed into a new cell!
+          const prevNeighbors = new Set(getNeighborCellKeysFromKey(prevCell));
+          const newNeighbors = getNeighborCellKeys(player.x, player.y);
+          const enteredCells = newNeighbors.filter(
+            (k) => !prevNeighbors.has(k),
+          );
+
+          // Collect positions of players in the newly entered cells
+          const syncEntries: BinaryMovementEntry[] = [];
+          for (const [otherId, otherPlayer] of roomState.players) {
+            if (otherId === client.id) continue;
+            const otherCell = roomState.playerCells.get(otherId);
+            if (otherCell && enteredCells.includes(otherCell)) {
+              syncEntries.push([
+                otherPlayer.numericId,
+                otherPlayer.x,
+                otherPlayer.y,
+                's',
+              ]);
+            }
+          }
+
+          if (syncEntries.length > 0) {
+            client.emit('batchMove', encodeMovementBatch(syncEntries));
+          }
+        }
+        roomState.playerCells.set(client.id, newCell);
+
+        const numId = roomState.playerNumericIds.get(client.id) ?? 0;
+        roomState.pendingMoves.set(client.id, [
+          client.id,
+          numId,
+          player.x,
+          player.y,
+          direction,
+        ]);
       } else {
         client.emit('move', [client.id, player.x, player.y, 's']);
       }
@@ -196,7 +373,15 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const roomState = this.rooms.get(code);
     if (roomState) {
       const player = roomState.players.get(client.id);
+      const numId = roomState.playerNumericIds.get(client.id);
+      if (numId !== undefined) {
+        roomState.numericIdToPlayerId.delete(numId);
+        roomState.playerNumericIds.delete(client.id);
+      }
       roomState.players.delete(client.id);
+      roomState.pendingMoves.delete(client.id);
+      roomState.playerCells.delete(client.id);
+      roomState.sockets.delete(client.id);
       if (player) {
         this.server.to(code).emit('playerLeft', player);
       }

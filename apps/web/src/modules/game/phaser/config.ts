@@ -16,6 +16,10 @@ const config: Phaser.Types.Core.GameConfig = {
     height: window.innerHeight,
   },
   parent: 'game-container',
+  fps: {
+    target: 30,
+    forceSetTimeOut: true,
+  },
   render: {
     antialiasGL: false,
     pixelArt: true,

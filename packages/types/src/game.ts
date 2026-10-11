@@ -1,5 +1,6 @@
 export interface Player {
   id: string;
+  numericId: number;
   name: string;
   avatar: string;
   x: number;

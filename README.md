@@ -7,6 +7,18 @@
 > **Real-Time Spatial Hangout & Virtual World Engine**  
 > A 2D multiplayer virtual space built with **Phaser 3**, **React**, **NestJS**, and **WebSockets**.
 
+## 📖 Project Documentation & Dev Journey
+
+The complete development journey, architecture diagrams, and technical deep-dives are documented in the [`docs/`](./docs) folder (structured as an Obsidian vault):
+
+- **[Project Story & Overview (`docs/luma.md`)](./docs/luma.md)**: Origins, motivations, core stack choices, and development diary.
+- **[Architecture & Evolution (`docs/architecture/`)](./docs/architecture/)**:
+  - **[v1 Architecture](./docs/architecture/v1/)**: Initial prototype architecture, design notes, and Excalidraw canvas.
+  - **[v2 Architecture](./docs/architecture/v2/)**: Spatial features, canvas diagrams, and testing notes.
+  - **[v3 Architecture](./docs/architecture/v3/)**: Scale testing, socket optimization plans, and real-time multiplayer flows.
+- **[Topic Deep-Dives (`docs/Topics/`)](./docs/Topics/)**: Research into Phaser 3, game loops, WebSockets, and state sync.
+- **[Engineering & Setup Notes (`docs/notes/`)](./docs/notes/)**: Project setup guide, monorepo configuration, and development notes.
+
 ---
 
 ## What's inside?
@@ -18,11 +30,16 @@ This Turborepo includes the following packages & apps:
 ```shell
 .
 ├── apps
-│   ├── api                       # NestJS app (https://nestjs.com).
-│   └── web                       # Next.js app (https://nextjs.org).
-└── packages
-    ├── @repo/eslint-config       # `eslint` configurations (includes `prettier`)
-    ├── @repo/jest-config         # `jest` configurations
+│   ├── api                       # NestJS WebSocket & REST API
+│   └── web                       # React + Vite + Phaser 3 frontend
+├── packages
+│   ├── @repo/database            # Prisma schema, client, and migrations
+│   ├── @repo/types               # Shared TypeScript models and binary protocol types
+│   ├── @repo/eslint-config       # ESLint configurations
+│   └── @repo/typescript-config   # Base TypeScript configurations
+├── tools
+│   └── bot-simulator             # Headless high-concurrency bot simulator
+└── docs                          # Architecture notes, Excalidraw diagrams & dev diary
 ```
 
 Each package and application are mostly written in [TypeScript](https://www.typescriptlang.org/).
